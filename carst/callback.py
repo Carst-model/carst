@@ -118,7 +118,7 @@ class DiagnosticCallback(object):
     def __init__(self, solver_obj, outputdir=None, export_to_hdf5=True,
                  append_to_log=True):
         """
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
@@ -218,7 +218,7 @@ class ScalarConservationCallback(DiagnosticCallback):
 
         :arg scalar_callback: Python function that takes the solver object as an argument and
             returns a scalar quantity of interest
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
@@ -245,29 +245,6 @@ class ScalarConservationCallback(DiagnosticCallback):
         return line
 
 
-class VolumeConservation3DCallback(ScalarConservationCallback):
-    """Checks conservation of 3D volume (volume of 3D mesh)"""
-    name = 'volume3d'
-
-    def __init__(self, solver_obj, outputdir=None, export_to_hdf5=False,
-                 append_to_log=True):
-        """
-        :arg solver_obj: Thetis solver object
-        :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
-            default solver's output directory is used.
-        :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
-            format
-        :kwarg bool append_to_log: If True, callback output messages will be printed
-            in log
-        """
-        def vol3d():
-            return comp_volume_3d(self.solver_obj.mesh)
-        super(VolumeConservation3DCallback, self).__init__(vol3d,
-                                                           solver_obj,
-                                                           outputdir,
-                                                           export_to_hdf5,
-                                                           append_to_log)
-
 
 class VolumeConservation2DCallback(ScalarConservationCallback):
     """Checks conservation of 2D volume (integral of water elevation field)"""
@@ -276,7 +253,7 @@ class VolumeConservation2DCallback(ScalarConservationCallback):
     def __init__(self, solver_obj, outputdir=None, export_to_hdf5=False,
                  append_to_log=True):
         """
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
@@ -302,7 +279,7 @@ class TracerMassConservationCallback(ScalarConservationCallback):
                  append_to_log=True):
         """
         :arg tracer_name: Name of the tracer. Use canonical field names as in :class:`.FieldDict`.
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
@@ -330,7 +307,7 @@ class MinMaxConservationCallback(DiagnosticCallback):
         """
         :arg minmax_callback: Python function that takes the solver object as
             an argument and returns a (min, max) value tuple
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5
@@ -366,7 +343,7 @@ class TracerOvershootCallBack(MinMaxConservationCallback):
                  append_to_log=True):
         """
         :arg tracer_name: Name of the tracer. Use canonical field names as in :class:`.FieldDict`.
-        :arg solver_obj: Thetis solver object
+        :arg solver_obj: Carst solver object
         :kwarg str outputdir: Custom directory where hdf5 files will be stored. By
             default solver's output directory is used.
         :kwarg bool export_to_hdf5: If True, diagnostics will be stored in hdf5

@@ -26,7 +26,7 @@ class FlowSolver2d(FrozenClass):
 
     .. code-block:: python
 
-        from thetis import *
+        from carst import *
         mesh2d = RectangleMesh(20, 20, 10e3, 10e3)
 
     Create bathymetry function, set a constant value
