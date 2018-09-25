@@ -1,0 +1,2 @@
+include versioneer.py
+include carst/_version.py
