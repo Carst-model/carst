@@ -7,13 +7,18 @@ from . import shallowwater_eq
 from . import timeintegrator
 from . import rungekutta
 from . import implicitexplicit
+from . import coupled_timeintegrator_2d
+from . import tracer_eq_2d
+import weakref
 import time as time_mod
 from mpi4py import MPI
 from . import exporter
 from .field_defs import field_metadata
-from .options import ModelOptions
+from .options import ModelOptions2d
 from . import callback
 from .log import *
+from collections import OrderedDict
+import thetis.limiter as limiter
 
 
 class FlowSolver2d(FrozenClass):
@@ -26,7 +31,7 @@ class FlowSolver2d(FrozenClass):
 
     .. code-block:: python
 
-        from carst import *
+        from thetis import *
         mesh2d = RectangleMesh(20, 20, 10e3, 10e3)
 
     Create bathymetry function, set a constant value
@@ -43,11 +48,11 @@ class FlowSolver2d(FrozenClass):
         solver_obj = solver2d.FlowSolver2d(mesh2d, bathymetry_2d)
         options = solver_obj.options
         options.element_family = 'dg-dg'
-        options.order = 1
-        options.timestepper_type = 'cranknicolson'
-        options.t_export = 50.0
-        options.t_end = 3600.
-        options.dt = 25.0
+        options.polynomial_degree = 1
+        options.timestepper_type = 'CrankNicolson'
+        options.simulation_export_time = 50.0
+        options.simulation_end_time = 3600.
+        options.timestep = 25.0
 
     Assign initial condition for water elevation
 
@@ -75,7 +80,7 @@ class FlowSolver2d(FrozenClass):
         :type bathymetry_2d: :class:`Function`
         :kwarg options: Model options (optional). Model options can also be
             changed directly via the :attr:`.options` class property.
-        :type options: :class:`.ModelOptions` instance
+        :type options: :class:`.ModelOptions2d` instance
         """
         self._initialized = False
         self.mesh2d = mesh2d
@@ -88,9 +93,9 @@ class FlowSolver2d(FrozenClass):
         self.dt = None
         """Time step"""
 
-        self.options = ModelOptions()
+        self.options = ModelOptions2d()
         """
-        Dictionary of all options. A :class:`.ModelOptions` object.
+        Dictionary of all options. A :class:`.ModelOptions2d` object.
         """
         if options is not None:
             self.options.update(options)
@@ -99,7 +104,7 @@ class FlowSolver2d(FrozenClass):
         self.simulation_time = 0
         self.iteration = 0
         self.i_export = 0
-        self.next_export_t = self.simulation_time + self.options.t_export
+        self.next_export_t = self.simulation_time + self.options.simulation_export_time
 
         self.callbacks = callback.CallbackManager()
         """
@@ -123,7 +128,7 @@ class FlowSolver2d(FrozenClass):
         self.export_initial_state = True
         """Do export initial state. False if continuing a simulation"""
 
-        self.bnd_functions = {'shallow_water': {}}
+        self.bnd_functions = {'shallow_water': {}, 'tracer': {}}
 
         self._isfrozen = True
 
@@ -160,18 +165,25 @@ class FlowSolver2d(FrozenClass):
         """
         Sets the model the model time step
 
-        Uses ``options.dt`` if set, otherwise sets the maximum time step
-        allowed by the CFL condition (see :meth:`.compute_time_step`).
+        If the time integrator supports automatic time step, and
+        :attr:`ModelOptions2d.timestepper_options.use_automatic_timestep` is
+        `True`, we compute the maximum time step allowed by the CFL condition.
+        Otherwise uses :attr:`ModelOptions2d.timestep`.
 
         :kwarg float alpha: CFL number scaling factor
         """
+        automatic_timestep = (hasattr(self.options.timestepper_options, 'use_automatic_timestep') and
+                              self.options.timestepper_options.use_automatic_timestep)
         # TODO revisit math alpha is OBSOLETE
-        self.dt = self.options.dt
-        if self.dt is None:
-            mesh2d_dt = self.compute_time_step(u_scale=self.options.u_advection)
+        if automatic_timestep:
+            mesh2d_dt = self.compute_time_step(u_scale=self.options.horizontal_velocity_scale)
             dt = self.options.cfl_2d*alpha*float(mesh2d_dt.dat.data.min())
             dt = self.comm.allreduce(dt, op=MPI.MIN)
             self.dt = dt
+        else:
+            assert self.options.timestep is not None
+            assert self.options.timestep > 0.0
+            self.dt = self.options.timestep
         if self.comm.rank == 0:
             print_output('dt = {:}'.format(self.dt))
             sys.stdout.flush()
@@ -185,24 +197,26 @@ class FlowSolver2d(FrozenClass):
         """
         self._isfrozen = False
         # ----- function spaces: elev in H, uv in U, mixed is W
-        self.function_spaces.P0_2d = FunctionSpace(self.mesh2d, 'DG', 0)
-        self.function_spaces.P1_2d = FunctionSpace(self.mesh2d, 'CG', 1)
-        self.function_spaces.P1v_2d = VectorFunctionSpace(self.mesh2d, 'CG', 1)
-        self.function_spaces.P1DG_2d = FunctionSpace(self.mesh2d, 'DG', 1)
-        self.function_spaces.P1DGv_2d = VectorFunctionSpace(self.mesh2d, 'DG', 1)
+        self.function_spaces.P0_2d = FunctionSpace(self.mesh2d, 'DG', 0, name='P0_2d')
+        self.function_spaces.P1_2d = FunctionSpace(self.mesh2d, 'CG', 1, name='P1_2d')
+        self.function_spaces.P1v_2d = VectorFunctionSpace(self.mesh2d, 'CG', 1, name='P1v_2d')
+        self.function_spaces.P1DG_2d = FunctionSpace(self.mesh2d, 'DG', 1, name='P1DG_2d')
+        self.function_spaces.P1DGv_2d = VectorFunctionSpace(self.mesh2d, 'DG', 1, name='P1DGv_2d')
         # 2D velocity space
         if self.options.element_family == 'rt-dg':
-            self.function_spaces.U_2d = FunctionSpace(self.mesh2d, 'RT', self.options.order+1)
-            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'DG', self.options.order)
+            self.function_spaces.U_2d = FunctionSpace(self.mesh2d, 'RT', self.options.polynomial_degree+1, name='U_2d')
+            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'DG', self.options.polynomial_degree, name='H_2d')
         elif self.options.element_family == 'dg-cg':
-            self.function_spaces.U_2d = VectorFunctionSpace(self.mesh2d, 'DG', self.options.order, name='U_2d')
-            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'CG', self.options.order+1)
+            self.function_spaces.U_2d = VectorFunctionSpace(self.mesh2d, 'DG', self.options.polynomial_degree, name='U_2d')
+            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'CG', self.options.polynomial_degree+1, name='H_2d')
         elif self.options.element_family == 'dg-dg':
-            self.function_spaces.U_2d = VectorFunctionSpace(self.mesh2d, 'DG', self.options.order, name='U_2d')
-            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'DG', self.options.order)
+            self.function_spaces.U_2d = VectorFunctionSpace(self.mesh2d, 'DG', self.options.polynomial_degree, name='U_2d')
+            self.function_spaces.H_2d = FunctionSpace(self.mesh2d, 'DG', self.options.polynomial_degree, name='H_2d')
         else:
             raise Exception('Unsupported finite element family {:}'.format(self.options.element_family))
         self.function_spaces.V_2d = MixedFunctionSpace([self.function_spaces.U_2d, self.function_spaces.H_2d])
+
+        self.function_spaces.Q_2d = FunctionSpace(self.mesh2d, 'DG', 1, name='Q_2d')
 
         self._isfrozen = True
 
@@ -222,11 +236,18 @@ class FlowSolver2d(FrozenClass):
         self.eq_sw = shallowwater_eq.ShallowWaterEquations(
             self.fields.solution_2d.function_space(),
             self.fields.bathymetry_2d,
-            nonlin=self.options.nonlin,
-            include_grad_div_viscosity_term=self.options.include_grad_div_viscosity_term,
-            include_grad_depth_viscosity_term=self.options.include_grad_depth_viscosity_term
+            self.options
         )
         self.eq_sw.bnd_functions = self.bnd_functions['shallow_water']
+        if self.options.solve_tracer:
+            self.fields.tracer_2d = Function(self.function_spaces.Q_2d, name='tracer_2d')
+            self.eq_tracer = tracer_eq_2d.TracerEquation2D(self.function_spaces.Q_2d, bathymetry=self.fields.bathymetry_2d,
+                                                           use_lax_friedrichs=self.options.use_lax_friedrichs_tracer)
+            if self.options.use_limiter_for_tracers and self.options.polynomial_degree > 0:
+                self.tracer_limiter = limiter.VertexBasedP1DGLimiter(self.function_spaces.Q_2d)
+            else:
+                self.tracer_limiter = None
+
         self._isfrozen = True  # disallow creating new attributes
 
     def create_timestepper(self):
@@ -239,88 +260,83 @@ class FlowSolver2d(FrozenClass):
         self._isfrozen = False
 
         if self.options.log_output and not self.options.no_exports:
-            logfile = os.path.join(create_directory(self.options.outputdir), 'log')
+            logfile = os.path.join(create_directory(self.options.output_directory), 'log')
             filehandler = logging.logging.FileHandler(logfile, mode='w')
             filehandler.setFormatter(logging.logging.Formatter('%(message)s'))
             output_logger.addHandler(filehandler)
 
         # ----- Time integrators
         fields = {
-            'linear_drag': self.options.linear_drag,
-            'quadratic_drag': self.options.quadratic_drag,
-            'mu_manning': self.options.mu_manning,
-            'viscosity_h': self.options.h_viscosity,
-            'uv_lax_friedrichs': self.options.uv_lax_friedrichs,
-            'coriolis': self.options.coriolis,
+            'linear_drag_coefficient': self.options.linear_drag_coefficient,
+            'quadratic_drag_coefficient': self.options.quadratic_drag_coefficient,
+            'manning_drag_coefficient': self.options.manning_drag_coefficient,
+            'viscosity_h': self.options.horizontal_viscosity,
+            'lax_friedrichs_velocity_scaling_factor': self.options.lax_friedrichs_velocity_scaling_factor,
+            'coriolis': self.options.coriolis_frequency,
             'wind_stress': self.options.wind_stress,
-            'uv_source': self.options.uv_source_2d,
-            'elev_source': self.options.elev_source_2d, }
+            'atmospheric_pressure': self.options.atmospheric_pressure,
+            'momentum_source': self.options.momentum_source_2d,
+            'volume_source': self.options.volume_source_2d, }
         self.set_time_step()
-        if self.options.timestepper_type.lower() == 'ssprk33':
+        if self.options.timestepper_type == 'SSPRK33':
             self.timestepper = rungekutta.SSPRK33(self.eq_sw, self.fields.solution_2d,
                                                   fields, self.dt,
                                                   bnd_conditions=self.bnd_functions['shallow_water'],
-                                                  solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'ssprk33semi':
-            self.timestepper = rungekutta.SSPRK33SemiImplicit(self.eq_sw, self.fields.solution_2d,
-                                                              fields, self.dt,
-                                                              bnd_conditions=self.bnd_functions['shallow_water'],
-                                                              solver_parameters=self.options.solver_parameters_sw,
-                                                              semi_implicit=self.options.use_linearized_semi_implicit_2d,
-                                                              theta=self.options.shallow_water_theta)
-
-        elif self.options.timestepper_type.lower() == 'forwardeuler':
+                                                  solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'ForwardEuler':
             self.timestepper = timeintegrator.ForwardEuler(self.eq_sw, self.fields.solution_2d,
                                                            fields, self.dt,
                                                            bnd_conditions=self.bnd_functions['shallow_water'],
-                                                           solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'backwardeuler':
+                                                           solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'BackwardEuler':
             self.timestepper = rungekutta.BackwardEuler(self.eq_sw, self.fields.solution_2d,
                                                         fields, self.dt,
                                                         bnd_conditions=self.bnd_functions['shallow_water'],
-                                                        solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'cranknicolson':
-            self.timestepper = timeintegrator.CrankNicolson(self.eq_sw, self.fields.solution_2d,
-                                                            fields, self.dt,
-                                                            bnd_conditions=self.bnd_functions['shallow_water'],
-                                                            solver_parameters=self.options.solver_parameters_sw,
-                                                            semi_implicit=self.options.use_linearized_semi_implicit_2d,
-                                                            theta=self.options.shallow_water_theta)
-        elif self.options.timestepper_type.lower() == 'dirk22':
-            self.timestepper = rungekutta.CrankNicolsonRK(self.eq_sw, self.fields.solution_2d,
-                                                          fields, self.dt,
-                                                          bnd_conditions=self.bnd_functions['shallow_water'],
-                                                          solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'dirk33':
+                                                        solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'CrankNicolson':
+            if self.options.solve_tracer:
+                self.timestepper = coupled_timeintegrator_2d.CoupledCrankNicolson2D(weakref.proxy(self))
+            else:
+                self.timestepper = timeintegrator.CrankNicolson(self.eq_sw, self.fields.solution_2d,
+                                                                fields, self.dt,
+                                                                bnd_conditions=self.bnd_functions['shallow_water'],
+                                                                solver_parameters=self.options.timestepper_options.solver_parameters,
+                                                                semi_implicit=self.options.timestepper_options.use_semi_implicit_linearization,
+                                                                theta=self.options.timestepper_options.implicitness_theta)
+        elif self.options.timestepper_type == 'DIRK22':
+            self.timestepper = rungekutta.DIRK22(self.eq_sw, self.fields.solution_2d,
+                                                 fields, self.dt,
+                                                 bnd_conditions=self.bnd_functions['shallow_water'],
+                                                 solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'DIRK33':
             self.timestepper = rungekutta.DIRK33(self.eq_sw, self.fields.solution_2d,
                                                  fields, self.dt,
                                                  bnd_conditions=self.bnd_functions['shallow_water'],
-                                                 solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'steadystate':
+                                                 solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'SteadyState':
             self.timestepper = timeintegrator.SteadyState(self.eq_sw, self.fields.solution_2d,
                                                           fields, self.dt,
                                                           bnd_conditions=self.bnd_functions['shallow_water'],
-                                                          solver_parameters=self.options.solver_parameters_sw)
-        elif self.options.timestepper_type.lower() == 'pressureprojectionpicard':
+                                                          solver_parameters=self.options.timestepper_options.solver_parameters)
+        elif self.options.timestepper_type == 'PressureProjectionPicard':
 
             u_test = TestFunction(self.function_spaces.U_2d)
             self.eq_mom = shallowwater_eq.ShallowWaterMomentumEquation(
-                u_test, self.function_spaces.H_2d, self.function_spaces.U_2d,
+                u_test, self.function_spaces.U_2d, self.function_spaces.H_2d,
                 self.fields.bathymetry_2d,
-                nonlin=self.options.nonlin,
-                include_grad_div_viscosity_term=self.options.include_grad_div_viscosity_term,
-                include_grad_depth_viscosity_term=self.options.include_grad_depth_viscosity_term
+                options=self.options
             )
             self.eq_mom.bnd_functions = self.bnd_functions['shallow_water']
             self.timestepper = timeintegrator.PressureProjectionPicard(self.eq_sw, self.eq_mom, self.fields.solution_2d,
                                                                        fields, self.dt,
                                                                        bnd_conditions=self.bnd_functions['shallow_water'],
-                                                                       solver_parameters=self.options.solver_parameters_sw,
-                                                                       solver_parameters_mom=self.options.solver_parameters_sw_momentum,
-                                                                       semi_implicit=self.options.use_linearized_semi_implicit_2d,
-                                                                       theta=self.options.shallow_water_theta)
+                                                                       solver_parameters=self.options.timestepper_options.solver_parameters_pressure,
+                                                                       solver_parameters_mom=self.options.timestepper_options.solver_parameters_momentum,
+                                                                       semi_implicit=self.options.timestepper_options.use_semi_implicit_linearization,
+                                                                       theta=self.options.timestepper_options.implicitness_theta,
+                                                                       iterations=self.options.timestepper_options.picard_iterations)
 
-        elif self.options.timestepper_type.lower() == 'sspimex':
+        elif self.options.timestepper_type == 'SSPIMEX':
             # TODO meaningful solver params
             sp_impl = {
                 'ksp_type': 'gmres',
@@ -352,16 +368,16 @@ class FlowSolver2d(FrozenClass):
         uv_2d, elev_2d = self.fields.solution_2d.split()
         self.fields.uv_2d = uv_2d
         self.fields.elev_2d = elev_2d
-        self.exporters = {}
+        self.exporters = OrderedDict()
         if not self.options.no_exports:
-            e = exporter.ExportManager(self.options.outputdir,
+            e = exporter.ExportManager(self.options.output_directory,
                                        self.options.fields_to_export,
                                        self.fields,
                                        field_metadata,
                                        export_type='vtk',
                                        verbose=self.options.verbose > 0)
             self.exporters['vtk'] = e
-            hdf5_dir = os.path.join(self.options.outputdir, 'hdf5')
+            hdf5_dir = os.path.join(self.options.output_directory, 'hdf5')
             e = exporter.ExportManager(hdf5_dir,
                                        self.options.fields_to_export_hdf5,
                                        self.fields,
@@ -386,7 +402,7 @@ class FlowSolver2d(FrozenClass):
             self.create_exporters()
         self._initialized = True
 
-    def assign_initial_conditions(self, elev=None, uv=None):
+    def assign_initial_conditions(self, elev=None, uv=None, tracer=None):
         """
         Assigns initial conditions
 
@@ -402,6 +418,8 @@ class FlowSolver2d(FrozenClass):
             elev_2d.project(elev)
         if uv is not None:
             uv_2d.project(uv)
+        if tracer is not None and self.options.solve_tracer:
+            self.fields.tracer_2d.project(tracer)
 
         self.timestepper.initialize(self.fields.solution_2d)
 
@@ -423,8 +441,8 @@ class FlowSolver2d(FrozenClass):
         Also evaluates all callbacks set to 'export' interval.
         """
         self.callbacks.evaluate(mode='export')
-        for key in self.exporters:
-            self.exporters[key].export()
+        for e in self.exporters.values():
+            e.export()
 
     def load_state(self, i_export, outputdir=None, t=None, iteration=None):
         """
@@ -441,7 +459,7 @@ class FlowSolver2d(FrozenClass):
 
         :arg int i_export: export index to load
         :kwarg string outputdir: (optional) directory where files are read from.
-            By default ``options.outputdir``.
+            By default ``options.output_directory``.
         :kwarg float t: simulation time. Overrides the time stamp stored in the
             hdf5 files.
         :kwarg int iteration: Overrides the iteration count in the hdf5 files.
@@ -449,7 +467,7 @@ class FlowSolver2d(FrozenClass):
         if not self._initialized:
             self.initialize()
         if outputdir is None:
-            outputdir = self.options.outputdir
+            outputdir = self.options.output_directory
         # create new ExportManager with desired outputdir
         state_fields = ['uv_2d', 'elev_2d']
         hdf5_dir = os.path.join(outputdir, 'hdf5')
@@ -465,7 +483,7 @@ class FlowSolver2d(FrozenClass):
 
         # time stepper bookkeeping for export time step
         self.i_export = i_export
-        self.next_export_t = self.i_export*self.options.t_export
+        self.next_export_t = self.i_export*self.options.simulation_export_time
         if iteration is None:
             iteration = int(np.ceil(self.next_export_t/self.dt))
         if t is None:
@@ -474,14 +492,14 @@ class FlowSolver2d(FrozenClass):
         self.simulation_time = t
 
         # for next export
-        self.export_initial_state = outputdir != self.options.outputdir
+        self.export_initial_state = outputdir != self.options.output_directory
         if self.export_initial_state:
             offset = 0
         else:
             offset = 1
-        self.next_export_t += self.options.t_export
-        for k in self.exporters:
-            self.exporters[k].set_next_export_ix(self.i_export + offset)
+        self.next_export_t += self.options.simulation_export_time
+        for e in self.exporters.values():
+            e.set_next_export_ix(self.i_export + offset)
 
     def print_state(self, cputime):
         """
@@ -489,14 +507,24 @@ class FlowSolver2d(FrozenClass):
 
         :arg float cputime: Measured CPU time
         """
-        norm_h = norm(self.fields.solution_2d.split()[1])
-        norm_u = norm(self.fields.solution_2d.split()[0])
+        if self.options.tracer_only:
+            norm_q = norm(self.fields.tracer_2d)
 
-        line = ('{iexp:5d} {i:5d} T={t:10.2f} '
-                'eta norm: {e:10.4f} u norm: {u:10.4f} {cpu:5.2f}')
-        print_output(line.format(iexp=self.i_export, i=self.iteration,
-                                 t=self.simulation_time, e=norm_h,
-                                 u=norm_u, cpu=cputime))
+            line = ('{iexp:5d} {i:5d} T={t:10.2f} '
+                    'tracer norm: {q:10.4f} {cpu:5.2f}')
+
+            print_output(line.format(iexp=self.i_export, i=self.iteration,
+                                     t=self.simulation_time, q=norm_q,
+                                     cpu=cputime))
+        else:
+            norm_h = norm(self.fields.solution_2d.split()[1])
+            norm_u = norm(self.fields.solution_2d.split()[0])
+
+            line = ('{iexp:5d} {i:5d} T={t:10.2f} '
+                    'eta norm: {e:10.4f} u norm: {u:10.4f} {cpu:5.2f}')
+            print_output(line.format(iexp=self.i_export, i=self.iteration,
+                                     t=self.simulation_time, e=norm_h,
+                                     u=norm_u, cpu=cputime))
         sys.stdout.flush()
 
     def iterate(self, update_forcings=None,
@@ -504,8 +532,8 @@ class FlowSolver2d(FrozenClass):
         """
         Runs the simulation
 
-        Iterates over the time loop until time ``options.t_end`` is reached.
-        Exports fields to disk on ``options.t_export`` intervals.
+        Iterates over the time loop until time ``options.simulation_end_time`` is reached.
+        Exports fields to disk on ``options.simulation_export_time`` intervals.
 
         :kwarg update_forcings: User-defined function that takes simulation
             time as an argument and updates time-dependent boundary conditions
@@ -517,16 +545,32 @@ class FlowSolver2d(FrozenClass):
         if not self._initialized:
             self.initialize()
 
+        self.options.use_limiter_for_tracers &= self.options.polynomial_degree > 0
+
         t_epsilon = 1.0e-5
         cputimestamp = time_mod.clock()
-        next_export_t = self.simulation_time + self.options.t_export
+        next_export_t = self.simulation_time + self.options.simulation_export_time
 
         dump_hdf5 = self.options.export_diagnostics and not self.options.no_exports
-        if self.options.check_vol_conservation_2d:
+        if self.options.check_volume_conservation_2d:
             c = callback.VolumeConservation2DCallback(self,
                                                       export_to_hdf5=dump_hdf5,
                                                       append_to_log=True)
             self.add_callback(c)
+
+        if self.options.check_tracer_conservation:
+            c = callback.TracerMassConservation2DCallback('tracer_2d',
+                                                          self,
+                                                          export_to_hdf5=dump_hdf5,
+                                                          append_to_log=True)
+            self.add_callback(c, eval_interval='export')
+
+        if self.options.check_tracer_overshoot:
+            c = callback.TracerOvershootCallBack('tracer_2d',
+                                                 self,
+                                                 export_to_hdf5=dump_hdf5,
+                                                 append_to_log=True)
+            self.add_callback(c, eval_interval='export')
 
         # initial export
         self.print_state(0.0)
@@ -534,23 +578,27 @@ class FlowSolver2d(FrozenClass):
             self.export()
             if export_func is not None:
                 export_func()
-            if 'vtk' in self.exporters:
+            if 'vtk' in self.exporters and isinstance(self.fields.bathymetry_2d, Function):
                 self.exporters['vtk'].export_bathymetry(self.fields.bathymetry_2d)
 
-        while self.simulation_time <= self.options.t_end + t_epsilon:
+        initial_simulation_time = self.simulation_time
+        internal_iteration = 0
+
+        while self.simulation_time <= self.options.simulation_end_time + t_epsilon:
 
             self.timestepper.advance(self.simulation_time, update_forcings)
 
             # Move to next time step
             self.iteration += 1
-            self.simulation_time = self.iteration*self.dt
+            internal_iteration += 1
+            self.simulation_time = initial_simulation_time + internal_iteration*self.dt
 
             self.callbacks.evaluate(mode='timestep')
 
             # Write the solution to file
             if self.simulation_time >= next_export_t - t_epsilon:
                 self.i_export += 1
-                next_export_t += self.options.t_export
+                next_export_t += self.options.simulation_export_time
 
                 cputime = time_mod.clock() - cputimestamp
                 cputimestamp = time_mod.clock()

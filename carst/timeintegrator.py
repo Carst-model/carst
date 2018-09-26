@@ -94,7 +94,7 @@ class ForwardEuler(TimeIntegrator):
 
         # create functions to hold the values of previous time step
         self.fields_old = {}
-        for k in self.fields:
+        for k in sorted(self.fields):
             if self.fields[k] is not None:
                 if isinstance(self.fields[k], FiredrakeFunction):
                     self.fields_old[k] = Function(
@@ -120,18 +120,17 @@ class ForwardEuler(TimeIntegrator):
         """Assigns initial conditions to all required fields."""
         self.solution_old.assign(solution)
         # assign values to old functions
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
     def advance(self, t, update_forcings=None):
         """Advances equations for one time step."""
-        self.dt_const.assign(dt)
         if update_forcings is not None:
             update_forcings(t + self.dt)
         self.solution_old.assign(self.solution)
         self.solver.solve()
         # shift time
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
 
@@ -162,7 +161,7 @@ class CrankNicolson(TimeIntegrator):
         # create functions to hold the values of previous time step
         # TODO is this necessary? is self.fields sufficient?
         self.fields_old = {}
-        for k in self.fields:
+        for k in sorted(self.fields):
             if self.fields[k] is not None:
                 if isinstance(self.fields[k], FiredrakeFunction):
                     self.fields_old[k] = Function(
@@ -207,7 +206,7 @@ class CrankNicolson(TimeIntegrator):
         """Assigns initial conditions to all required fields."""
         self.solution_old.assign(solution)
         # assign values to old functions
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
     def advance(self, t, update_forcings=None):
@@ -217,7 +216,7 @@ class CrankNicolson(TimeIntegrator):
         self.solution_old.assign(self.solution)
         self.solver.solve()
         # shift time
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
 
@@ -319,14 +318,28 @@ class PressureProjectionPicard(TimeIntegrator):
         uv_lagged, eta_lagged = self.solution_lagged.split()
         uv_old, eta_old = self.solution_old.split()
 
+        if (solver_parameters['ksp_type'] == 'preonly'
+                and 'fieldsplit_H_2d' in solver_parameters
+                and solver_parameters['fieldsplit_H_2d']['ksp_type'] == 'preonly'
+                and solver_parameters['fieldsplit_H_2d']['pc_python_type'] == 'thetis.AssembledSchurPC'
+                and element_continuity(eta_old.function_space().ufl_element()).horizontal != 'cg'):
+            # the default settings use AssembledSchurPC which assumes that the velocity block is only a dg mass matrix
+            # Under these assumptions this preconditioner assembles the exact Schur complement. If this is not true, we either need
+            # iterations with the unassembled Schur complement (fieldsplit_H_2d_ksp_type), or alternatively iterations outside
+            # the fieldsplit to deal with the fact that we haven't solved the Schur complement exactly.
+            # Currently only the dg-cg element pair, gives a pure DG  mass matrix velocity block: for dg-dg the pressure gradient adds a
+            # Riemann term in the velocity block, for rt-dg the velocity block cannot be explicitly inverted either.
+            raise Exception("The timestepper PressureProjectionPicard is only recommended in combination with the "
+                            "dg-cg element_family. If you want to use it in combination with dg-dg or rt-dg you need to adjust the solver_parameters_pressure option.")
+
         # create functions to hold the values of previous time step
         self.fields_old = {}
-        for k in self.fields:
+        for k in sorted(self.fields):
             if self.fields[k] is not None:
-                if isinstance(self.fields[k], Function):
+                if isinstance(self.fields[k], FiredrakeFunction):
                     self.fields_old[k] = Function(
                         self.fields[k].function_space())
-                elif isinstance(self.fields[k], Constant):
+                elif isinstance(self.fields[k], FiredrakeConstant):
                     self.fields_old[k] = Constant(self.fields[k])
         # for the mom. eqn. the 'eta' field is just one of the 'other' fields
         fields_mom = self.fields.copy()
@@ -370,9 +383,10 @@ class PressureProjectionPicard(TimeIntegrator):
         # subtract G eta_lagged: G is the implicit term in the mom. eqn.
         for key in self.equation_mom.terms:
             if self.equation_mom.labels[key] == 'implicit':
+                term = self.equation.terms[key]
                 self.F += -self.dt_const*(
-                    - theta_const*self.equation.terms[key].residual(self.uv_star, eta_lagged, uv_star_nl, eta_lagged, self.fields, self.fields, bnd_conditions)
-                    - (1-theta_const)*self.equation.terms[key].residual(uv_old, eta_old, uv_old, eta_old, self.fields_old, self.fields_old, bnd_conditions)
+                    - theta_const*term.residual(self.uv_star, eta_lagged, uv_star_nl, eta_lagged, self.fields, self.fields, bnd_conditions)
+                    - (1-theta_const)*term.residual(uv_old, eta_old, uv_old, eta_old, self.fields_old, self.fields_old, bnd_conditions)
                 )
 
         self.update_solver()
@@ -388,6 +402,7 @@ class PressureProjectionPicard(TimeIntegrator):
             self.solver_parameters['mat_type'] = 'aij'
         prob = NonlinearVariationalProblem(self.F, self.solution)
         self.solver = NonlinearVariationalSolver(prob,
+                                                 appctx={'a': derivative(self.F, self.solution)},
                                                  solver_parameters=self.solver_parameters,
                                                  options_prefix=self.name)
 
@@ -396,7 +411,7 @@ class PressureProjectionPicard(TimeIntegrator):
         self.solution_old.assign(solution)
         self.solution_lagged.assign(solution)
         # assign values to old functions
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
     def advance(self, t, updateForcings=None):
@@ -408,11 +423,13 @@ class PressureProjectionPicard(TimeIntegrator):
         for it in range(self.iterations):
             if self.iterations > 1:
                 self.solution_lagged.assign(self.solution)
-            self.solver_mom.solve()
-            self.solver.solve()
+            with timed_stage("Momentum solve"):
+                self.solver_mom.solve()
+            with timed_stage("Pressure solve"):
+                self.solver.solve()
 
         # shift time
-        for k in self.fields_old:
+        for k in sorted(self.fields_old):
             self.fields_old[k].assign(self.fields[k])
 
 
@@ -611,6 +628,7 @@ class SSPRK22ALE(TimeIntegrator):
                                                       bnd_conditions)
         self.mu_form = inner(self.solution, self.equation.test)*dx
         self._nontrivial = self.l != 0
+        self._initialized = False
 
         self.n_stages = 2
         self.c = [0, 1]
@@ -622,6 +640,7 @@ class SSPRK22ALE(TimeIntegrator):
         mass_matrix = assemble(self.a)
         self.lin_solver = LinearSolver(mass_matrix,
                                        solver_parameters=self.solver_parameters)
+        self._initialized = True
 
     def stage_one_prep(self):
         """
@@ -712,6 +731,8 @@ class SSPRK22ALE(TimeIntegrator):
 
     def advance(self, t, update_forcings=None):
         """Advances equations for one time step."""
+        if not self._initialized:
+            self.initialize(self.solution)
         for i_stage in range(self.n_stages):
             self.prepare_stage(i_stage, t, update_forcings)
             self.solve_stage(i_stage)
