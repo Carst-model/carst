@@ -80,7 +80,7 @@ class stratiMesh:
 
         return
 
-    def _loadVTU(self, step, rank):
+    def _loadVTU(self, step):
         """
         Load VTU grid to extract cells connectivity and vertices position.
         Parameters
@@ -89,7 +89,7 @@ class stratiMesh:
             Specific step at which the TIN variables will be read.
         """
 
-        pvtu = self.folder+'/'+'surface_'+str(step)+'.vtu'
+        pvtu = self.folder+'land_0.vtu'
         reader = vtk.vtkXMLUnstructuredGridReader()
         reader.SetFileName(pvtu)
         reader.Update()
@@ -105,9 +105,26 @@ class stratiMesh:
         cells = np.array(cells)
         coords = np.array([vtkData.GetTuple3(i) for i in range(vtkData.GetNumberOfTuples())])
 
+        # now get original land surface, which is held in the surface variable
+        name = "function_17"
+        try:
+          pointdata=output.GetPointData()
+          vtkdata=pointdata.GetScalars(name)
+          vtkdata.GetNumberOfTuples()
+        except:
+          try:
+            celldata=output.GetCellData()
+            vtkdata=celldata.GetScalars(name)
+            vtkdata.GetNumberOfTuples()
+          except:
+            raise Exception("ERROR: couldn't find point or cell scalar field data with name "+name+" in file "+pvtu+".")
+        
+        surface = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
+        coords[:,2] = surface
+
         return coords, cells
 
-    def _loadStrati(self, step, rank):
+    def _loadStrati(self, step):
         """
         Load stratigraphic dataset.
         Parameters
@@ -138,24 +155,6 @@ class stratiMesh:
         
         palaeoH = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
 
-        rockNb = 1
-        rock_prop = np.zeros((palaeoH.shape[0],rockNb))
-
-        name = "thickness"
-        try:
-          pointdata=output.GetPointData()
-          vtkdata=pointdata.GetScalars(name)
-          vtkdata.GetNumberOfTuples()
-        except:
-          try:
-            celldata=output.GetCellData()
-            vtkdata=celldata.GetScalars(name)
-            vtkdata.GetNumberOfTuples()
-          except:
-            raise Exception("ERROR: couldn't find point or cell scalar field data with name "+name+" in file "+pvtu+".")
-        
-        rock_prop[:,0] = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
-
         name = "surface"
         try:
           pointdata=output.GetPointData()
@@ -171,10 +170,9 @@ class stratiMesh:
         
         surface = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
 
-        return rock_prop, palaeoH, surface
+        return palaeoH, surface
 
-    def _write_hdf5(self, xt, yt, zt, cellt, layID, layH, layD, propR,
-                    clayID, clayD, clayH, cpropR, step, rank):
+    def _write_hdf5(self, xt, yt, zt, cellt, layID, layD, clayID, clayD, step):
         """
         Write the HDF5 file containing the stratigraphic mesh variables.
         Parameters
@@ -207,11 +205,12 @@ class stratiMesh:
             TIN file for the considered CPU.
         """
 
-        h5file = self.folder+'/'+self.h5Strati+str(step)+'.p'+str(rank)+'.hdf5'
+        h5file = self.h5Strati+str(step)+'.hdf5'
         with h5py.File(h5file, "w") as f:
 
             # Write node coordinates and elevation
             f.create_dataset('coords',shape=(len(xt),3), dtype='float32', compression='gzip')
+            print (len(xt),3), len(zt)
             f["coords"][:,0] = xt
             f["coords"][:,1] = yt
             f["coords"][:,2] = zt
@@ -225,11 +224,11 @@ class stratiMesh:
             f.create_dataset('clayID',shape=(len(cellt[:,0]),1), dtype='int32', compression='gzip')
             f["clayID"][:,0] = clayID
 
-            f.create_dataset('layH',shape=(len(xt),1), dtype='float32', compression='gzip')
-            f["layH"][:,0] = layH
+            #f.create_dataset('layH',shape=layH.shape, dtype='float32', compression='gzip')
+            #f["layH"][:,0] = layH
 
-            f.create_dataset('clayH',shape=(len(cellt[:,0]),1), dtype='float32', compression='gzip')
-            f["clayH"][:,0] = clayH
+            #f.create_dataset('clayH',shape=(len(cellt[:,0]),1), dtype='float32', compression='gzip')
+            #f["clayH"][:,0] = clayH
 
             f.create_dataset('layD',shape=(len(xt),1), dtype='float32', compression='gzip')
             f["layD"][:,0] = layD
@@ -252,7 +251,7 @@ class stratiMesh:
             Number of irregular points per processor mesh
         """
 
-        xmf_file = self.folder+'/'+self.xmffile+str(step)+'.xmf'
+        xmf_file = self.xmffile+str(step)+'.xmf'
         f= open(str(xmf_file),'w')
 
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
@@ -304,19 +303,6 @@ class stratiMesh:
             f.write('          <DataItem Format="HDF" NumberType="float" ')
             f.write('Dimensions="%d 1">%s:/clayH</DataItem>\n'%(elems[p],pfile))
             f.write('         </Attribute>\n')
-
-            for r in range(self.rockNb):
-                f.write('         <Attribute Type="Scalar" Center="Node" Name="prop rock%d">\n'%r)
-                f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
-                f.write('Dimensions="%d 1">%s:/propR%d</DataItem>\n'%(nodes[p],pfile,r))
-                f.write('         </Attribute>\n')
-
-                f.write('         <Attribute Type="Scalar" Center="Cell" Name="prop rock%d">\n'%r)
-                f.write('          <DataItem Format="HDF" NumberType="Float"  ')
-                f.write('Dimensions="%d 1">%s:/cpropR%d</DataItem>\n'%(elems[p],pfile,r))
-                f.write('         </Attribute>\n')
-
-            f.write('      </Grid>\n')
 
         f.write('    </Grid>\n')
         f.write(' </Domain>\n')
@@ -375,80 +361,75 @@ class stratiMesh:
             print 'Process layers at time [in years]: ',self.tnow
             ptsnb = []
             cellnb = []
-            for i in range(0, self.ncpus):
 
-                # Load TIN grid for specific time step
-                coords, cells = self._loadVTU(s,i)
-                x, y, z = np.hsplit(coords, 3)
+            # Load TIN grid for specific time step
+            coords, cells = self._loadVTU(s)
+            x, y, z = np.hsplit(coords, 3)
 
-                # Load STRATI dataset
-                rockTH, paleoH, surface = self._loadStrati(s,i)
-                layTh = rockTH[:]
-                tmpPaleo = paleoH[:]
-                print cells
+            # Define dimensions
+            ptsNb = len(x)
+            paleoH, top_surface = self._loadStrati(s)
+            tmpRock = top_surface
+            tmpPaleo = paleoH
 
-                print len(paleoH)
+            # Build attributes:
+            # Layer number attribute
+            #layID = np.array([np.arange(layNb+1),]*ptsNb,dtype=int)
+            layID = np.array([np.arange(2),]*ptsNb,dtype=int)
+            ltmp = layID.flatten(order='F')
+            #print ptsNb, s, ltmp
 
-                # Define dimensions
-                ptsNb = len(x)
-                rockNb = rockTH.shape[1]
-                if self.rockNb is None:
-                    self.rockNb = rockNb
+            # Elevation of each layer
+            # Add the top surface to the layer elevation record
+            layZ = top_surface - z
+            ztmp = layZ.flatten(order='F')
+            ztmp = np.concatenate((ztmp, z[:,0]), axis=0)
 
-                # Build attributes:
-                # Layer number attribute
-                #layID = np.array([np.arange(layNb+1),]*ptsNb,dtype=int)
-                layID = np.array(np.zeros(ptsNb)+s,dtype=int)
+            # Creation of each layer coordinates
+            xtmp = x[:,0]
+            ytmp = y[:,0]
+            ztmp = z[:,0]
+            ctmp = cells
+            oldcells = ctmp
 
-                # Elevation of each layer
-                layZ = surface
+            # Cell layer index
+            cellI = np.array([np.arange(1,2),]*len(cells),dtype=int)
+            cellItmp = cellI.flatten(order='F')
 
-                # Creation of each layer coordinates
-                xtmp = x[:,0]
-                ytmp = y[:,0]
-                ctmp = cells
-                oldcells = ctmp
+            # Paleo-depth of each layer
+            dtmp = tmpPaleo.flatten(order='F')
+            dtmp = np.concatenate((dtmp,z[:,0]), axis=0)
 
-                # Cell based rock property attributes
-                cellP = np.zeros((len(cells),rockNb))
 
-                # Cell layer index
-                cellI = np.array([np.arange(1,s),]*len(cells),dtype=int)
-                cellItmp = cellI.flatten(order='F')
+            for l in range(1,2):
+                xtmp = np.concatenate((xtmp, x[:,0]), axis=0)
+                ytmp = np.concatenate((ytmp, y[:,0]), axis=0)
+                ztmp = np.concatenate((ztmp, z[:,0]), axis=0)
 
-                for l in range(1,2):
-                    print l
-                    xtmp = np.concatenate((xtmp, x[:,0]), axis=0)
-                    ytmp = np.concatenate((ytmp, y[:,0]), axis=0)
+                # Creation of each layer elements
+                newcells = oldcells+len(x)
+                celltmp = np.concatenate((oldcells, newcells), axis=1)
+                #cellH = np.sum(htmp[newcells-1],axis=1)/3.
+                cellD = np.sum(dtmp[newcells-1],axis=1)/3.
+                oldcells = newcells
+                if l > 1:
+                    ctmp = np.concatenate((ctmp, celltmp), axis=0)
+                    cellDtmp = np.concatenate((cellDtmp, cellD), axis=0)
+                    #cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
+                    #cellPtmp = np.concatenate((cellPtmp, cellP), axis=0)
+                else:
+                    ctmp = np.copy(celltmp)
+                    cellDtmp = np.copy(cellD)
+                    #cellHtmp = np.copy(cellH)
 
-                    # Creation of each layer elements
-                    newcells = oldcells+len(x)
-                    celltmp = np.concatenate((oldcells, newcells), axis=1)
-                    cellD = np.sum(surface[oldcells-1],axis=1)/3.
-                    cellH = np.sum(paleoH[oldcells-1],axis=1)/3.
-                    for k in range(rockNb):
-                        cellP[:,k] = np.sum(layTh[oldcells-1,k],axis=1)/3.
-                    oldcells = newcells
-                    if l > 1:
-                        ctmp = np.concatenate((ctmp, celltmp), axis=0)
-                        cellDtmp = np.concatenate((cellDtmp, cellD), axis=0)
-                        cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
-                        cellPtmp = np.concatenate((cellPtmp, cellP), axis=0)
-                    else:
-                        ctmp = np.copy(celltmp)
-                        cellDtmp = np.copy(cellD)
-                        cellHtmp = np.copy(cellH)
-                        cellPtmp = np.copy(cellP)
-                    cellP.fill(0.)
+            # Create the HDF5 file
+            self._write_hdf5(xtmp, ytmp, ztmp, ctmp,
+                             ltmp, dtmp,
+                             cellItmp, cellDtmp, s)
 
-                # Create the HDF5 file
-                self._write_hdf5(xtmp, ytmp, layZ,
-                                 ctmp, layID, layTh, paleoH, paleoH,
-                                 cellItmp, cellDtmp, cellHtmp,
-                                 cellPtmp, s, i)
+            cellnb.append(len(ctmp))
+            ptsnb.append(len(xtmp))
 
-                cellnb.append(len(ctmp))
-                ptsnb.append(len(xtmp))
 
             # Create the XMF file
             self._write_xmf(s, cellnb, ptsnb)
