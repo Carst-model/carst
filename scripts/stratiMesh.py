@@ -71,22 +71,20 @@ class stratiMesh:
 
         # Assign file names
         self.h5TIN = 'h5/tin.time'
-        self.h5Strat = 'h5/stratal.time'
-        self.h5Strati = 'h5/strati.time'
-        self.xmffile = 'xmf/stratal.time'
+        self.h5Strat = 'stratal.time'
+        self.h5Strati = 'strati.time'
+        self.xmffile = 'h5/stratal.time'
         self.xdmfName = xdmfName+'.xdmf'
         self.dispTime = dispTime
         self.tnow = None
 
         return
 
-    def _loadVTU(self, step):
+    def _loadVTU(self):
         """
         Load VTU grid to extract cells connectivity and vertices position.
         Parameters
         ----------
-        variable : step
-            Specific step at which the TIN variables will be read.
         """
 
         pvtu = self.folder+'land_0.vtu'
@@ -106,7 +104,7 @@ class stratiMesh:
         coords = np.array([vtkData.GetTuple3(i) for i in range(vtkData.GetNumberOfTuples())])
 
         # now get original land surface, which is held in the surface variable
-        name = "function_17"
+        name = "Starting_topo"
         try:
           pointdata=output.GetPointData()
           vtkdata=pointdata.GetScalars(name)
@@ -122,6 +120,8 @@ class stratiMesh:
         surface = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
         coords[:,2] = surface
 
+        # we therefore return the x,y,z plane and the cell connectivity
+
         return coords, cells
 
     def _loadStrati(self, step):
@@ -135,7 +135,7 @@ class stratiMesh:
             Stratigraphic grid for the considered CPU.
         """
 
-        pvtu = self.folder+'/'+'surface_'+str(step)+'.vtu'
+        pvtu = self.folder+'/'+'layer_data_'+str(step)+'.vtu'
         reader = vtk.vtkXMLUnstructuredGridReader()
         reader.SetFileName(pvtu)
         reader.Update()
@@ -154,7 +154,27 @@ class stratiMesh:
             raise Exception("ERROR: couldn't find point or cell scalar field data with name "+name+" in file "+pvtu+".")
         
         palaeoH = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
+        name = "thickness"
+        try:
+          pointdata=output.GetPointData()
+          vtkdata=pointdata.GetScalars(name)
+          vtkdata.GetNumberOfTuples()
+        except:
+          try:
+            celldata=output.GetCellData()
+            vtkdata=celldata.GetScalars(name)
+            vtkdata.GetNumberOfTuples()
+          except:
+            raise Exception("ERROR: couldn't find point or cell scalar field data with name "+name+" in file "+pvtu+".")
+        
+        thickness = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
 
+        # we now load in the current top surface
+        pvtu = self.folder+'/'+'surfaces_'+str(step)+'.vtu'
+        reader = vtk.vtkXMLUnstructuredGridReader()
+        reader.SetFileName(pvtu)
+        reader.Update()
+        output = reader.GetOutput()
         name = "surface"
         try:
           pointdata=output.GetPointData()
@@ -170,9 +190,10 @@ class stratiMesh:
         
         surface = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
 
-        return palaeoH, surface
+        return palaeoH, np.reshape(np.array([thickness]), (1326,1), order='F'), surface
 
-    def _write_hdf5(self, xt, yt, zt, cellt, layID, layD, clayID, clayD, step):
+    def _write_hdf5(self, xt, yt, zt, cellt, layID, layH, layD,
+                    clayID, clayD, clayH, step):
         """
         Write the HDF5 file containing the stratigraphic mesh variables.
         Parameters
@@ -205,26 +226,26 @@ class stratiMesh:
             TIN file for the considered CPU.
         """
 
-        h5file = self.h5Strati+str(step)+'.hdf5'
+        h5file = self.folder+'/h5/'+self.h5Strati+str(step)+'.hdf5'
         with h5py.File(h5file, "w") as f:
 
             # Write node coordinates and elevation
             f.create_dataset('coords',shape=(len(xt),3), dtype='float32', compression='gzip')
-            print (len(xt),3), len(zt)
             f["coords"][:,0] = xt
             f["coords"][:,1] = yt
             f["coords"][:,2] = zt
 
             f.create_dataset('cells',shape=(len(cellt[:,0]),6), dtype='int32', compression='gzip')
+            print len(cellt[:,0])
             f["cells"][:,:] = cellt
 
-            f.create_dataset('layID',shape=(len(xt),1), dtype='int32', compression='gzip')
-            f["layID"][:,0] = layID
+            #f.create_dataset('layID',shape=(len(xt),1), dtype='int32', compression='gzip')
+            #f["layID"][:,0] = layID
 
-            f.create_dataset('clayID',shape=(len(cellt[:,0]),1), dtype='int32', compression='gzip')
-            f["clayID"][:,0] = clayID
+            #f.create_dataset('clayID',shape=(len(cellt[:,0]),1), dtype='int32', compression='gzip')
+            #f["clayID"][:,0] = clayID
 
-            #f.create_dataset('layH',shape=layH.shape, dtype='float32', compression='gzip')
+            #f.create_dataset('layH',shape=(len(xt),1), dtype='float32', compression='gzip')
             #f["layH"][:,0] = layH
 
             #f.create_dataset('clayH',shape=(len(cellt[:,0]),1), dtype='float32', compression='gzip')
@@ -233,8 +254,8 @@ class stratiMesh:
             f.create_dataset('layD',shape=(len(xt),1), dtype='float32', compression='gzip')
             f["layD"][:,0] = layD
 
-            f.create_dataset('clayD',shape=(len(cellt[:,0]),1), dtype='float32', compression='gzip')
-            f["clayD"][:,0] = clayD
+            #f.create_dataset('clayD',shape=(len(cellt[:,0]),1), dtype='float32', compression='gzip')
+            #f["clayD"][:,0] = clayD
 
         return
 
@@ -251,18 +272,17 @@ class stratiMesh:
             Number of irregular points per processor mesh
         """
 
-        xmf_file = self.xmffile+str(step)+'.xmf'
+        xmf_file = self.folder+'/'+self.xmffile+str(step)+'.xmf'
         f= open(str(xmf_file),'w')
 
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">\n')
         f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
         f.write(' <Domain>\n')
-        f.write('    <Grid GridType="Collection" CollectionType="Spatial">\n')
         f.write('      <Time Type="Single" Value="%s"/>\n'%self.tnow)
 
         for p in range(self.ncpus):
-            pfile = self.h5Strati+str(step)+'.p'+str(p)+'.hdf5'
+            pfile = self.h5Strati+str(step)+'.hdf5'
             f.write('      <Grid Name="Block.%s">\n' %(str(p)))
             f.write('         <Topology Type="Wedge" NumberOfElements="%d" BaseOffset="1">\n'%elems[p])
             f.write('          <DataItem Format="HDF" DataType="Int" ')
@@ -274,35 +294,35 @@ class stratiMesh:
             f.write('Dimensions="%d 3">%s:/coords</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Geometry>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Node" Name="layer ID">\n')
-            f.write('          <DataItem Format="HDF" NumberType="Int" ')
-            f.write('Dimensions="%d 1">%s:/layID</DataItem>\n'%(nodes[p],pfile))
-            f.write('         </Attribute>\n')
+            #f.write('         <Attribute Type="Scalar" Center="Node" Name="layer ID">\n')
+            #f.write('          <DataItem Format="HDF" NumberType="Int" ')
+            #f.write('Dimensions="%d 1">%s:/layID</DataItem>\n'%(nodes[p],pfile))
+            #f.write('         </Attribute>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Cell" Name="layer ID">\n')
-            f.write('          <DataItem Format="HDF" NumberType="Int" ')
-            f.write('Dimensions="%d 1">%s:/clayID</DataItem>\n'%(elems[p],pfile))
-            f.write('         </Attribute>\n')
+            #f.write('         <Attribute Type="Scalar" Center="Cell" Name="layer ID">\n')
+            #f.write('          <DataItem Format="HDF" NumberType="Int" ')
+            #f.write('Dimensions="%d 1">%s:/clayID</DataItem>\n'%(elems[p],pfile))
+            #f.write('         </Attribute>\n')
 
             f.write('         <Attribute Type="Scalar" Center="Node" Name="paleo-depth">\n')
             f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
             f.write('Dimensions="%d 1">%s:/layD</DataItem>\n'%(nodes[p],pfile))
             f.write('         </Attribute>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Cell" Name="paleo-depth">\n')
-            f.write('          <DataItem Format="HDF" NumberType="float" ')
-            f.write('Dimensions="%d 1">%s:/clayD</DataItem>\n'%(elems[p],pfile))
-            f.write('         </Attribute>\n')
+            #f.write('         <Attribute Type="Scalar" Center="Cell" Name="paleo-depth">\n')
+            #f.write('          <DataItem Format="HDF" NumberType="float" ')
+            #f.write('Dimensions="%d 1">%s:/clayD</DataItem>\n'%(elems[p],pfile))
+            #f.write('         </Attribute>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Node" Name="layer th">\n')
-            f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
-            f.write('Dimensions="%d 1">%s:/layH</DataItem>\n'%(nodes[p],pfile))
-            f.write('         </Attribute>\n')
+            #f.write('         <Attribute Type="Scalar" Center="Node" Name="layer th">\n')
+            #f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+            #f.write('Dimensions="%d 1">%s:/layH</DataItem>\n'%(nodes[p],pfile))
+            #f.write('         </Attribute>\n')
 
-            f.write('         <Attribute Type="Scalar" Center="Cell" Name="layer th">\n')
-            f.write('          <DataItem Format="HDF" NumberType="float" ')
-            f.write('Dimensions="%d 1">%s:/clayH</DataItem>\n'%(elems[p],pfile))
-            f.write('         </Attribute>\n')
+            #f.write('         <Attribute Type="Scalar" Center="Cell" Name="layer th">\n')
+            #f.write('          <DataItem Format="HDF" NumberType="float" ')
+            #f.write('Dimensions="%d 1">%s:/clayH</DataItem>\n'%(elems[p],pfile))
+            #f.write('         </Attribute>\n')
 
         f.write('    </Grid>\n')
         f.write(' </Domain>\n')
@@ -357,20 +377,29 @@ class stratiMesh:
 
         assert self.startStep<=self.endStep, 'ERROR: End step lower than Start step.'
 
+        # Load initial PVTU grid for specific time step
+        coords, cells = self._loadVTU()
+        x, y, z = np.hsplit(coords, 3)
+
+
         for s in range(self.startStep,self.endStep+1):
-            print 'Process layers at time [in years]: ',self.tnow
+            print 'Process layers at time [in years]: ',self.tnow, s
             ptsnb = []
             cellnb = []
 
-            # Load TIN grid for specific time step
-            coords, cells = self._loadVTU(s)
-            x, y, z = np.hsplit(coords, 3)
-
             # Define dimensions
-            ptsNb = len(x)
-            paleoH, top_surface = self._loadStrati(s)
-            tmpRock = top_surface
-            tmpPaleo = paleoH
+            ptsNb = len(x)            
+            #print z
+            print ptsNb, len(y), len(z)
+            #print cells
+            # this loads the sediment surface and the palaeo-
+            # water depth (i.e. a rock property)
+            paleoH, thickness, top_surface = self._loadStrati(s)
+            print len(paleoH), len(thickness), len(top_surface)
+
+            # we would need to loop here for all previous surfaces
+            # possibly in loadStrati, however, for now...
+
 
             # Build attributes:
             # Layer number attribute
@@ -379,16 +408,30 @@ class stratiMesh:
             ltmp = layID.flatten(order='F')
             #print ptsNb, s, ltmp
 
+            # Thickness of each layer
+            print thickness.shape
+            layTH = thickness[:,0]
+            htmp = layTH.flatten(order='F')
+            htmp = np.concatenate((np.zeros(ptsNb),htmp), axis=0)
+
+            # Paleo-depth of each layer
+            dtmp = paleoH.flatten(order='F')
+            dtmp = np.concatenate((dtmp,top_surface), axis=0)
+
             # Elevation of each layer
-            # Add the top surface to the layer elevation record
-            layZ = top_surface - z
+            cumH = np.cumsum(thickness[:,::-1],axis=1)
+            print cumH.shape
+            layZ = cumH[:,0] + z[:,0]
+            print len(top_surface)
             ztmp = layZ.flatten(order='F')
-            ztmp = np.concatenate((ztmp, z[:,0]), axis=0)
+            #print ztmp.shape
+            ztmp = np.concatenate((ztmp,z[:,0]), axis=0)
+            print len(ztmp)
+            print ztmp
 
             # Creation of each layer coordinates
             xtmp = x[:,0]
             ytmp = y[:,0]
-            ztmp = z[:,0]
             ctmp = cells
             oldcells = ctmp
 
@@ -396,43 +439,35 @@ class stratiMesh:
             cellI = np.array([np.arange(1,2),]*len(cells),dtype=int)
             cellItmp = cellI.flatten(order='F')
 
-            # Paleo-depth of each layer
-            dtmp = tmpPaleo.flatten(order='F')
-            dtmp = np.concatenate((dtmp,z[:,0]), axis=0)
-
-
             for l in range(1,2):
                 xtmp = np.concatenate((xtmp, x[:,0]), axis=0)
                 ytmp = np.concatenate((ytmp, y[:,0]), axis=0)
-                ztmp = np.concatenate((ztmp, z[:,0]), axis=0)
 
                 # Creation of each layer elements
                 newcells = oldcells+len(x)
                 celltmp = np.concatenate((oldcells, newcells), axis=1)
-                #cellH = np.sum(htmp[newcells-1],axis=1)/3.
                 cellD = np.sum(dtmp[newcells-1],axis=1)/3.
+                cellH = np.sum(htmp[newcells-1],axis=1)/3.
                 oldcells = newcells
                 if l > 1:
                     ctmp = np.concatenate((ctmp, celltmp), axis=0)
                     cellDtmp = np.concatenate((cellDtmp, cellD), axis=0)
-                    #cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
-                    #cellPtmp = np.concatenate((cellPtmp, cellP), axis=0)
+                    cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
                 else:
                     ctmp = np.copy(celltmp)
+                    print ctmp
                     cellDtmp = np.copy(cellD)
-                    #cellHtmp = np.copy(cellH)
+                    cellHtmp = np.copy(cellH)
 
             # Create the HDF5 file
-            self._write_hdf5(xtmp, ytmp, ztmp, ctmp,
-                             ltmp, dtmp,
-                             cellItmp, cellDtmp, s)
-
-            cellnb.append(len(ctmp))
-            ptsnb.append(len(xtmp))
+            self._write_hdf5(xtmp, ytmp, ztmp,
+                             ctmp, ltmp, htmp, dtmp,
+                             cellItmp, cellDtmp, cellHtmp,
+                             s)
 
 
             # Create the XMF file
-            self._write_xmf(s, cellnb, ptsnb)
+            self._write_xmf(s, [len(ctmp)], [ptsNb*2])
             self.tnow += self.dispTime
 
         # Create the XDMF file
