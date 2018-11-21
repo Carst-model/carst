@@ -1,17 +1,25 @@
-##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
-##                                                                                   ##
-##  This file forms part of the Badlands surface processes modelling companion.      ##
-##                                                                                   ##
-##  For full license and copyright information, please refer to the LICENSE.md file  ##
-##  located at the project root, or contact the authors.                             ##
-##                                                                                   ##
-##~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~##
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Copyright Jon Hill, University of York, jon.hill@york.ac.uk
+#
+# The concepts here are borrowed from the Badlands code by 
+# Tristan Salles: https://github.com/badlands-model
+#
 """
-Here we define the main functions to create the TIN based stratigraphic mesh from Badlands outputs.
-
 Example of calling method:
 
-mesh = stratiMesh(folder='output2', xdmfName = 'stratal_series', ncpus=1, layperstep=2, dispTime=5000.)
+mesh = stratiMesh(folder='output2', xdmfName = 'stratal_series', dispTime=5000.)
 mesh.outputSteps(startTime=240000.,endTime=245000.)
 
 """
@@ -355,6 +363,57 @@ class stratiMesh:
 
         return
 
+    def _writeAnteTopo(self, x, y, z, cells):
+        """Write the antecedant topography to a file
+        """
+        newcells = cells+len(x)
+        celltmp = np.concatenate((cells, newcells), axis=1)
+        xtmp = np.concatenate((x[:,0], x[:,0]), axis=0)
+        ytmp = np.concatenate((y[:,0], y[:,0]), axis=0)
+        # create a surface just below the minimum value in z
+        ztmp = np.concatenate((np.full((len(z[:,0])),np.amin(z)*1.1),z[:,0]), axis=0)
+
+        # write the XMF
+        xmf_file = self.folder+'/'+self.xmffile+'_antecedantTopography.xmf'
+        f= open(str(xmf_file),'w')
+
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        f.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">\n')
+        f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
+        f.write(' <Domain>\n')
+        f.write('      <Grid Name="Mesh">\n')
+        f.write('         <Topology Type="Wedge" NumberOfElements="%d" BaseOffset="1">\n'%len(xtmp))
+        f.write('          <DataItem Format="HDF" DataType="Int" ')
+        f.write('Dimensions="%d 6">%s_antecedantTopography.hdf5:/cells</DataItem>\n'%(len(celltmp[:,0]),self.h5Strati))
+        f.write('         </Topology>\n')
+
+        f.write('         <Geometry Type="XYZ">\n')
+        f.write('          <DataItem Format="HDF" NumberType="Float" Precision="4" ')
+        f.write('Dimensions="%d 3">%s_antecedantTopography.hdf5:/coords</DataItem>\n'%(len(xtmp),self.h5Strati))
+        f.write('         </Geometry>\n')
+
+        f.write('    </Grid>\n')
+        f.write(' </Domain>\n')
+        f.write('</Xdmf>\n')
+        f.close()
+
+        h5file = self.folder+'/h5/'+self.h5Strati+'_antecedantTopography.hdf5'
+        with h5py.File(h5file, "w") as f:
+
+            # Write node coordinates and elevation
+            f.create_dataset('coords',shape=(len(xtmp),3), dtype='float32', compression='gzip')
+            f["coords"][:,0] = xtmp
+            f["coords"][:,1] = ytmp
+            f["coords"][:,2] = ztmp
+
+            f.create_dataset('cells',shape=(len(celltmp[:,0]),6), dtype='int32', compression='gzip')
+            f["cells"][:,:] = celltmp
+
+        return
+
+
+
+
     def outputSteps(self, startTime=0, endTime=5000):
         """
         Define the steps that need to be visualise.
@@ -381,9 +440,11 @@ class stratiMesh:
         coords, cells = self._loadVTU()
         x, y, z = np.hsplit(coords, 3)
 
+        # creat antecedant topography wedges
+        self._writeAnteTopo(x, y, z, cells)
 
         for s in range(self.startStep,self.endStep+1):
-            print 'Process layers at time [in years]: ',self.tnow, s
+            print 'Processing layers at time [in years]: ',self.tnow, s
             ptsnb = []
             cellnb = []
 
