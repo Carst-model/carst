@@ -49,14 +49,14 @@ class stratiMesh:
         variable : folder
             Folder path to Carst outputs.
         variable : xdmfName
-            Name of Badlands stratigraphic grid outputs.
+            Name of Carst stratigraphic grid outputs.
         variable: ncpus
             Number of CPUs used to run the simulation.
         variable: layperstep
             Number of layers created between each display
             interval (obtained from the XmL input file).
         variable: dispTime
-            Time interval in years used to display badlands outputs.
+            Time interval in years used to display Carst outputs.
         """
 
         self.folder = folder
@@ -78,10 +78,10 @@ class stratiMesh:
         self.rockNb = None
 
         # Assign file names
-        self.h5TIN = 'h5/tin.time'
+        self.h5TIN = 'tin.time'
         self.h5Strat = 'stratal.time'
         self.h5Strati = 'strati.time'
-        self.xmffile = 'h5/stratal.time'
+        self.xmffile = 'stratal.time'
         self.xdmfName = xdmfName+'.xdmf'
         self.dispTime = dispTime
         self.tnow = None
@@ -234,7 +234,7 @@ class stratiMesh:
             TIN file for the considered CPU.
         """
 
-        h5file = self.folder+'/h5/'+self.h5Strati+str(step)+'.hdf5'
+        h5file = self.folder+'/'+self.h5Strati+str(step)+'.hdf5'
         nElements = len(cellt[:,0])
         nNodes = len(xt)
 
@@ -269,17 +269,17 @@ class stratiMesh:
 
 
         xmf_file = self.folder+'/'+self.xmffile+str(step)+'.xmf'
-        h5file = 'h5/'+self.h5Strati+str(step)+'.hdf5'
+        h5file = self.h5Strati+str(step)+'.hdf5'
         f= open(str(xmf_file),'w')
 
         f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd">\n')
         f.write('<Xdmf Version="2.0" xmlns:xi="http://www.w3.org/2001/XInclude">\n')
         f.write(' <Domain>\n')
-        f.write('      <Time Type="Single" Value="%s"/>\n'%self.tnow)
 
         pfile = self.h5Strati+str(step)+'.hdf5'
         f.write('      <Grid Name="Strat">\n')
+        f.write('         <Time Type="Single" Value="%s"/>\n'%self.tnow)
         f.write('         <Topology Type="Wedge" NumberOfElements="%d" BaseOffset="1">\n'%nElements)
         f.write('          <DataItem Format="HDF" DataType="Int" ')
         f.write('Dimensions="%d 6">%s:/cells</DataItem>\n'%(nElements,h5file))
@@ -386,7 +386,7 @@ class stratiMesh:
         f.write('</Xdmf>\n')
         f.close()
 
-        h5file = self.folder+'/h5/'+self.h5Strati+'_antecedantTopography.hdf5'
+        h5file = self.folder+'/'+self.h5Strati+'_antecedantTopography.hdf5'
         with h5py.File(h5file, "w") as f:
 
             # Write node coordinates and elevation
@@ -516,6 +516,7 @@ class stratiMesh:
                              ctmp, ltmp, htmp, dtmp,
                              cellItmp, cellDtmp, cellHtmp,
                              s)
+            self.tnow = self.tnow + self.dispTime
 
         # Create the XDMF file
         self._write_xdmf()

@@ -4,7 +4,7 @@ n = 30
 mesh = RectangleMesh(50, 25, 10000, 5000)
 nu_max = 1.0
 t = 0
-output_time = 1000
+output_time = 500
 
 V = FunctionSpace(mesh, "CG", 1)
 
@@ -63,7 +63,7 @@ layer_data.write(nu, thickness, depth, time=0)
 sl = File("Sea_level.pvd")
 sl.write(slf, time=0)
 
-end = 5000
+end = 20000
 while (t <= end):
     solve(F == 0, phi)#, bcs=[bc_land, bc_sea])
     phi_.assign(phi)
