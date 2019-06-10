@@ -1,3 +1,12 @@
+.PHONY: test lint
+
+test:
+	@echo "    Running simulation"
+	@( \
+		source ./firedrake/bin/activate; \
+		python3 diff_mod_test_real_scale.py; \
+	)
+
 lint:
 	@echo "    Linting carst codebase"
 	@flake8 carst
