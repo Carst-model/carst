@@ -5,6 +5,7 @@ mesh = RectangleMesh(50, 25, 10000, 5000)
 nu_max = 1.0
 t = 0
 output_time = 500
+OUTPUT_FOLDER = "output/"
 
 V = FunctionSpace(mesh, "CG", 1)
 
@@ -33,7 +34,7 @@ slf.interpolate(sea_level)
 
 
 land = project(100*(tanh(0.0005*(x[0]-6000))), V, name="Starting_topo")
-outfile = File("land.pvd")
+outfile = File(OUTPUT_FOLDER + "land.pvd")
 outfile.write(land)
 
 
@@ -56,11 +57,11 @@ F = (inner((phi - phi_)/timestep, v)
 
 # We now create an object for output visualisation::
 
-geometry = File("surfaces.pvd")
+geometry = File(OUTPUT_FOLDER + "surfaces.pvd")
 geometry.write(surface, phi, time=0)
-layer_data = File("layer_data.pvd")
+layer_data = File(OUTPUT_FOLDER + "layer_data.pvd")
 layer_data.write(nu, thickness, depth, time=0)
-sl = File("Sea_level.pvd")
+sl = File(OUTPUT_FOLDER + "Sea_level.pvd")
 sl.write(slf, time=0)
 
 end = 20000

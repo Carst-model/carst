@@ -1,3 +1,4 @@
 firedrake/*
+output/*
 firedrake-install
 **/*.log
