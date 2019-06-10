@@ -1,4 +1,7 @@
+**/__pycache__/*
+**/*.log
 firedrake/*
 output/*
 firedrake-install
-**/*.log
+tags
+MANIFEST.in
