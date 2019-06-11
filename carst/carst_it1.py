@@ -16,14 +16,9 @@ class Diffuse_Solver:
         self.coordinate_space = fd.SpatialCoordinate(self.mesh)
         self.function_space = fd.FunctionSpace(self.mesh, "CG", 1)
         self.test_function = fd.TestFunction(self.function_space)
-        self.land = fd.project(
-            100 * fd.tanh(0.0005 * (self.coordinate_space[0] - 6000)),
-            self.function_space,
-            name="starting_topo",
-        )
 
         # Declare the names of the functions we want for each solver
-        self.wanted_functions = {
+        self._wanted_functions = {
             "real_scale": (
                 "sed",
                 "sed_old",
@@ -45,22 +40,29 @@ class Diffuse_Solver:
             ),
         }
 
-        # Declare the names of the files the solvers want
-        self.wanted_files = {
+        # Declare the names of the files the solvers each want
+        self._wanted_files = {
             "real_scale": ("surfaces", "layer_data", "sea_level", "land"),
+            "carbonates": ("surfaces", "layer_data", "sea_level", "land"),
         }
+
+    def add_land(self, land):
+        self.land = land
 
     def _initialise_features(self, func_group):
         return (
-            {func_name: fd.Function(self.function_space, name=func_name) for func_name in self.wanted_functions[func_group]},
-            {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in self.wanted_files[func_group]},
+            {func_name: fd.Function(self.function_space, name=func_name) for func_name in self._wanted_functions[func_group]},
+            {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in self._wanted_files[func_group]},
         )
 
     def diffuse_real_scale_test(self, initial_condition, start_time, end_time, time_step, output_time):
+        # Ensure we have a land attr set
+        if not hasattr(self, "land"):
+            raise ValueError("No land geometry function found")
         sl_time = fd.Constant(25 * fd.sin(start_time / 100000 / 180 * math.pi))
 
         # Initialise our functions and out files
-        funcs, out_files = self._initialise_funcs("real_scale")
+        funcs, out_files = self._initialise_features("real_scale")
         funcs["slf"] = fd.Function(self.function_space, name="sea_level")
         funcs["sea_level"] = fd.Function(
             self.function_space,
@@ -154,3 +156,21 @@ class Diffuse_Solver:
                 out_files["sea_level"].write(funcs["slf"], time=current_time)
 
 
+    def diffuse_carbonate_test(self, initial_condition, start_time, end_time, time_step, output_time):
+        # Ensure we have a land attr set
+        if not hasattr(self, "land"):
+            raise ValueError("No land geometry function found")
+
+        # Initialise our functions and out files
+        sl_time = fd.Constant(25 * fd.sin(start_time / 1000000 / 180 * math.pi))
+        funcs, out_files = self._initialise_features("carbonates")
+        funcs["sea_level"] = fd.Function(
+            self.function_space,
+            val=fd.interpolate(sl_time, self.function_space),
+            name="sea_level"
+        )
+        funcs["slf"].interpolate(funcs["sea_level"])  # Hack to prevent random file names
+
+        # Assign our initial conditions
+        funcs["sed"].assign(initial_condition)
+        funcs["sed_old"].assign(initial_condition)

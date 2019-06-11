@@ -1,8 +1,17 @@
-import firedrake as fd
+#!/usr/bin/env python3
 import math
-from carst import Diffuse_Solver
+import firedrake as fd
+from carst_it1 import Diffuse_Solver
 
+# Initialise a solver and add land
 my_solver = Diffuse_Solver(fd.RectangleMesh(50, 25, 10000, 5000), "output")
+my_solver.add_land(fd.project(
+    100 * fd.tanh(0.0005 * (my_solver.coordinate_space[0] - 6000)),
+    my_solver.function_space,
+    name="starting_topo",
+))
+
+# Run with a sample initial condition
 my_solver.diffuse_real_scale_test(
     fd.project(
         (

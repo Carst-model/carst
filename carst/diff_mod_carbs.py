@@ -24,9 +24,6 @@ v = TestFunction(V)
 
 x = SpatialCoordinate(mesh)
 ic = project((20000*(1/(2*sqrt(2*3.14*250*250)) * exp(-((x[0]-6000)*(x[0]-6000))/(2*250*250)))) + (50000*(1/(2*sqrt(2*3.14*1000*1000)) * exp(-((x[0]-4000)*(x[0]-4000))/(2*1000*1000)))), V)
-#ic = project(0.25*sin(x[0]*3.1459),V)
-#ic = project(Expression(10),V)
-#land = project(Expression('0.0'), V)
 sl_time = Constant(25*sin(t/1000000/180*3.14159))
 sea_level = Function(V, val=interpolate(sl_time,V), name="sea_level")
 # if we don't do this, the sea level ouput has a random function name. 
@@ -69,10 +66,8 @@ end = 50000
 while (t <= end):
     # grow carbs
     light_func.interpolate(1.0/(1+exp(-2*depth*25.0))* exp(-1.0*depth/10))
-    solve(F == 0, phi)#, bcs=[bc_land, bc_sea])
-    #print(phi.dat.data)
+    solve(F == 0, phi)
     phi += carb_pr * light_func
-    #print(phi.dat.data)
     phi_.assign(phi)
     t += timestep
     limit.interpolate((surface - land)/(surface-land+tiny))
