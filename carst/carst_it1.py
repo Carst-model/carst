@@ -1,5 +1,6 @@
 import math
 import firedrake as fd
+import os
 
 # Set numerical constants
 TINY = 1e-10
@@ -32,30 +33,51 @@ class Diffuse_Solver:
                 "depth",
                 "diff",
             ),
+            "carbonates": (
+                "sed",
+                "sed_old",
+                "surface",
+                "limiter",
+                "thickness",
+                "depth",
+                "diff",
+                "light_attenuation",
+            ),
         }
+
+        # Declare the names of the files the solvers want
+        self.wanted_files = {
+            "real_scale": ("surfaces", "layer_data", "sea_level", "land"),
+        }
+
+    def _initialise_features(self, func_group):
+        return (
+            {func_name: fd.Function(self.function_space, name=func_name) for func_name in self.wanted_functions[func_group]},
+            {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in self.wanted_files[func_group]},
+        )
 
     def diffuse_real_scale_test(self, initial_condition, start_time, end_time, time_step, output_time):
         sl_time = fd.Constant(25 * fd.sin(start_time / 100000 / 180 * math.pi))
 
-        # Initialise our dictionary of functions, declaring "slf" and "sea_level" on their own
-        funcs = {func_name: fd.Function(self.function_space, name=func_name) for func_name in self.wanted_functions["real_scale"]}
+        # Initialise our functions and out files
+        funcs, out_files = self._initialise_funcs("real_scale")
         funcs["slf"] = fd.Function(self.function_space, name="sea_level")
         funcs["sea_level"] = fd.Function(
             self.function_space,
             val=fd.interpolate(sl_time, self.function_space),
-            name="sea_level"
+            name="sea_level",
         )
         # if we don't do this, the sea level ouput has a random function name.
         # Not helpful...
         funcs["slf"].interpolate(funcs["sea_level"])
 
-        outfile = fd.File(self.output_folder + "/land.pvd")
-        outfile.write(self.land)
+        out_files["land"].write(self.land)
 
         # Assign our two sediment buildup functions to the initial condition
         funcs["sed"].assign(initial_condition)
         funcs["sed_old"].assign(initial_condition)
 
+        # Perform initial interpolation
         funcs["surface"].interpolate((
             ((self.land + funcs["sed"]) + self.land)
             + abs((self.land + funcs["sed"]) - self.land)
@@ -71,6 +93,7 @@ class Diffuse_Solver:
             * fd.exp(-0.5 * funcs["depth"] ** 2)
         ) + 0.2022)
 
+        # Specify our function to solve (ie. the diffusion equation)
         F = (
             fd.inner(
                 (funcs["sed"] - funcs["sed_old"]) / time_step,
@@ -84,8 +107,6 @@ class Diffuse_Solver:
         ) * fd.dx
 
         # Write out initial data to our blank output files
-        wanted_files = ("surfaces", "layer_data", "sea_level")
-        out_files = {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in wanted_files}
         out_files["surfaces"].write(funcs["surface"], funcs["sed"], time=0)
         out_files["layer_data"].write(funcs["diff"], funcs["thickness"], funcs["depth"], time=0)
         out_files["sea_level"].write(funcs["slf"], time=0)
@@ -93,9 +114,14 @@ class Diffuse_Solver:
         # Begin looping until our end time has been reached
         current_time = start_time
         while current_time <= end_time:
+            # Perform the solve
             fd.solve(F == 0, funcs["sed"])
+
+            # Iterate
             funcs["sed_old"].assign(funcs["sed"])
             current_time += time_step
+
+            # Advance the functions
             funcs["limiter"].interpolate(
                 (funcs["surface"] - self.land)
                 / (funcs["surface"] - self.land + TINY)
@@ -124,33 +150,7 @@ class Diffuse_Solver:
                     funcs["depth"],
                     time=current_time
                 )
-                out_files["surface"].write(funcs["surface"], funcs["sed"], time=current_time)
+                out_files["surfaces"].write(funcs["surface"], funcs["sed"], time=current_time)
                 out_files["sea_level"].write(funcs["slf"], time=current_time)
 
 
-# Run with test values
-if __name__ == "__main__":
-    my_solver = Diffuse_Solver(fd.RectangleMesh(50, 25, 10000, 5000), "output")
-    my_solver.diffuse_real_scale_test(
-        fd.project(
-            (
-                20000
-                * (1 / (2 * fd.sqrt(2*math.pi*250*250)))
-                * fd.exp(
-                    -((my_solver.coordinate_space[0]-6000) * (my_solver.coordinate_space[0]-6000))
-                    / (2 * 250 * 250)
-                )
-            )
-            + (
-                50000
-                * (1 / (2 * fd.sqrt(2 * math.pi * 1000 * 1000)))
-                * fd.exp(
-                    -((my_solver.coordinate_space[0]-4000) * (my_solver.coordinate_space[0]-4000))
-                    / (2 * 1000 * 1000)
-                )
-            ), my_solver.function_space),
-        0,
-        20000,
-        50,
-        500,
-    )
