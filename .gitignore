@@ -1,8 +1,11 @@
 **/__pycache__/*
 **/*.log
+**/*.vtu
+**/*.xmf
+**/*.hdf5
+**/*.pvd
 firedrake/*
 output/*
 firedrake-install
 tags
 MANIFEST.in
-activate-firedrake

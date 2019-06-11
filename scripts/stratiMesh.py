@@ -13,7 +13,7 @@
 #
 # Copyright Jon Hill, University of York, jon.hill@york.ac.uk
 #
-# The concepts here are borrowed from the Badlands code by 
+# The concepts here are borrowed from the Badlands code by
 # Tristan Salles: https://github.com/badlands-model
 #
 """
@@ -25,15 +25,14 @@ mesh.outputSteps(startTime=240000.,endTime=245000.)
 """
 
 import os
-import math
-import errno
 import vtk
 import numpy as np
 import h5py
 
 
 import warnings
-warnings.simplefilter(action = "ignore", category = FutureWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 class stratiMesh:
     """
@@ -95,7 +94,7 @@ class stratiMesh:
         ----------
         """
 
-        pvtu = self.folder+'land_0.vtu'
+        pvtu = self.folder + "/" + 'land_0.vtu'
         reader = vtk.vtkXMLUnstructuredGridReader()
         reader.SetFileName(pvtu)
         reader.Update()
@@ -434,8 +433,8 @@ class stratiMesh:
         # creat antecedant topography wedges
         self._writeAnteTopo(x, y, z, cells)
 
-        for s in range(self.startStep,self.endStep+1):
-            print('Processing layers at time [in years]: ',self.tnow, s)
+        for s in range(self.startStep, self.endStep+1):
+            print('Processing layers at time [in years]: ', self.tnow, s)
 
             # this loads the sediment surface and the palaeo-
             # water depth (i.e. a rock property)
@@ -456,7 +455,7 @@ class stratiMesh:
             rockProp = np.array(rockProp)
             thicknesses = np.array(thicknesses)
             surfaces = np.array(surfaces)
-            
+
             # Layer number attribute
             layID = np.array([np.arange(nLayers+1,0,-1),]*ptsNb,dtype=int)
             ltmp = layID.flatten(order='F')
@@ -482,43 +481,46 @@ class stratiMesh:
             ztmp = np.concatenate((ztmp,z[:,0]), axis=0)
 
             # Creation of each layer coordinates
-            xtmp = x[:,0]
-            ytmp = y[:,0]
+            xtmp = x[:, 0]
+            ytmp = y[:, 0]
             ctmp = cells
             oldcells = ctmp
 
             # Cell layer index
-            cellI = np.array([np.arange(nLayers+1,1,-1),]*len(cells),dtype=int)
+            cellI = np.array([np.arange(nLayers+1, 1, -1)] * len(cells), dtype=int)
             cellItmp = cellI.flatten(order='F')
 
-
-            for l in range(1,nLayers+1):
-                xtmp = np.concatenate((xtmp, x[:,0]), axis=0)
-                ytmp = np.concatenate((ytmp, y[:,0]), axis=0)
+            for l in range(1, nLayers+1):
+                xtmp = np.concatenate((xtmp, x[:, 0]), axis=0)
+                ytmp = np.concatenate((ytmp, y[:, 0]), axis=0)
 
                 # Creation of each layer elements
                 newcells = oldcells+len(x)
                 celltmp = np.concatenate((oldcells, newcells), axis=1)
-                cellD = np.sum(dtmp[newcells-1],axis=1)/3.
-                cellH = np.sum(htmp[newcells-1],axis=1)/3.
+                cellD = np.sum(dtmp[newcells-1], axis=1)/3.
+                cellH = np.sum(htmp[newcells-1], axis=1)/3.
                 oldcells = newcells
-                if l > 1:
-                    ctmp = np.concatenate((ctmp, celltmp), axis=0)
-                    cellDtmp = np.concatenate((cellDtmp, cellD), axis=0)
-                    cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
-                else:
+                if l == 0:
                     ctmp = np.copy(celltmp)
                     cellDtmp = np.copy(cellD)
                     cellHtmp = np.copy(cellH)
+                else:
+                    ctmp = np.concatenate((ctmp, celltmp), axis=0)
+                    cellDtmp = np.concatenate((cellDtmp, cellD), axis=0)
+                    cellHtmp = np.concatenate((cellHtmp, cellH), axis=0)
 
             # Create the HDF5 file
             self._write_timestep(xtmp, ytmp, ztmp,
-                             ctmp, ltmp, htmp, dtmp,
-                             cellItmp, cellDtmp, cellHtmp,
-                             s)
+                                 ctmp, ltmp, htmp, dtmp,
+                                 cellItmp, cellDtmp, cellHtmp,
+                                 s)
             self.tnow = self.tnow + self.dispTime
 
         # Create the XDMF file
         self._write_xdmf()
 
         return
+
+
+mesh = stratiMesh(folder='.', xdmfName='stratal_series', dispTime=5000.)
+mesh.outputSteps(startTime=240000., endTime=245000.)
