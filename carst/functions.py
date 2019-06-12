@@ -5,7 +5,9 @@ import math
 TINY = 1e-10
 
 
-class Available_Funcs(enum.Enum):
+# To add a function, add it to carst_funcs then add the corresponding logic to
+# Function_Container._interpolation_funcs (make sure you get the key right!)
+class carst_funcs(enum.Enum):
     sed = 1
     sed_old = 2
     surface = 3
@@ -14,20 +16,23 @@ class Available_Funcs(enum.Enum):
     depth = 6
     diff = 7
     light_attenuation = 8
+    sea_level = 9
 
 
-class Carst_Functions():
+class Function_Container():
     _interpolation_funcs = {
-        Available_Funcs.surface: lambda land, funcs: ((land + funcs["sed"]) + land) + abs((land + funcs["sed"]) - land),
-        Available_Funcs.thickness: lambda land, funcs: (funcs["surface"] - land),
-        Available_Funcs.limiter: lambda land, funcs: (funcs["surface"] - land) / (funcs["surface"] - land + TINY),
-        Available_Funcs.depth: lambda land, funcs: funcs["sea_level"] - funcs["surface"],
-        Available_Funcs.diff: lambda land, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs["depth"] ** 2),
+        carst_funcs.surface: lambda land, funcs: (land + funcs[carst_funcs.sed] + land) + abs((land + funcs[carst_funcs.sed]) - land),
+        carst_funcs.thickness: lambda land, funcs: (funcs[carst_funcs.surface] - land),
+        carst_funcs.limiter: lambda land, funcs: (funcs[carst_funcs.surface] - land) / (funcs[carst_funcs.surface] - land + TINY),
+        carst_funcs.depth: lambda land, funcs: funcs[carst_funcs.sea_level] - funcs[carst_funcs.surface],
+        carst_funcs.diff: lambda land, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[carst_funcs.depth] ** 2),
     }
 
     def __init__(self, solver, wanted_funcs):
-        if not set(wanted_funcs).issubset(set(Available_Funcs)):
-            raise ValueError("Your wanted functions require an unsupported function")
+        # Type checking
+        for func in wanted_funcs:
+            if not isinstance(func, "carst_funcs"):
+                raise ValueError()
 
         self._solver = solver
         self.functions = {
@@ -43,7 +48,7 @@ class Carst_Functions():
 
         try:
             self.functions[function_name].interpolate(
-                Carst_Functions._interpolation_funcs[function_name](self._solver.land, self.functions)
+                Function_Container._interpolation_funcs[function_name](self._solver.land, self.functions)
             )
         except KeyError:
             pass
