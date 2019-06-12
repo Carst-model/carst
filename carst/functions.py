@@ -40,6 +40,9 @@ class Carst_Functions():
         if function_name not in self.functions.keys():
             raise ValueError("That function isn't in this object")
 
-        self.functions[function_name].interpolate(
-            Carst_Functions._interpolation_funcs[function_name](self._solver.land, self.functions)
-        )
+        try:
+            self.functions[function_name].interpolate(
+                Carst_Functions._interpolation_funcs[function_name](self._solver.land, self.functions)
+            )
+        except KeyError:
+            pass
