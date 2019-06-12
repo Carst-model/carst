@@ -7,11 +7,13 @@ TINY = 1e-10
 
 
 class Diffuse_Solver:
-    def __init__(self, base_mesh, output_folder):
-        # Check whether this exists please
+    def __init__(self, base_mesh, land, output_folder):
+        # Need to check whether the output folder actually exists with os
         self.output_folder = output_folder
 
-        # Generate all the needed stuff from the mesh
+        self.land = land
+
+        # Generate our workspace from the mesh
         self.mesh = base_mesh
         self.coordinate_space = fd.SpatialCoordinate(self.mesh)
         self.function_space = fd.FunctionSpace(self.mesh, "CG", 1)
@@ -46,9 +48,6 @@ class Diffuse_Solver:
             "carbonates": ("surfaces", "layer_data", "sea_level", "land"),
         }
 
-    def add_land(self, land):
-        self.land = land
-
     def _initialise_features(self, func_group):
         return (
             {func_name: fd.Function(self.function_space, name=func_name) for func_name in self._wanted_functions[func_group]},
@@ -56,9 +55,6 @@ class Diffuse_Solver:
         )
 
     def diffuse_real_scale_test(self, initial_condition, start_time, end_time, time_step, output_time):
-        # Ensure we have a land attr set
-        if not hasattr(self, "land"):
-            raise ValueError("No land geometry function found")
         sl_time = fd.Constant(25 * fd.sin(start_time / 100000 / 180 * math.pi))
 
         # Initialise our functions and out files
@@ -91,7 +87,7 @@ class Diffuse_Solver:
         )
         funcs["depth"].interpolate(funcs["sea_level"] - funcs["surface"])
         funcs["diff"].project((
-            2 / (fd.sqrt(2 * math.pi))
+            2 / fd.sqrt(2 * math.pi)
             * fd.exp(-0.5 * funcs["depth"] ** 2)
         ) + 0.2022)
 
