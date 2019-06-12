@@ -1,31 +1,32 @@
 import firedrake as fd
+import enum
 import math
 
 TINY = 1e-10
 
 
-class Carst_Functions():
-    available_funcs = [
-        "sed",
-        "sed_old",
-        "surface",
-        "limiter",
-        "thickness",
-        "depth",
-        "diff",
-        "light_attenuation",
-    ]
+class Available_Funcs(enum.Enum):
+    sed = 1
+    sed_old = 2
+    surface = 3
+    limiter = 4
+    thickness = 5
+    depth = 6
+    diff = 7
+    light_attenuation = 8
 
+
+class Carst_Functions():
     _interpolation_funcs = {
-        "surface": lambda land, funcs: ((land + funcs["sed"]) + land) + abs((land + funcs["sed"]) - land),
-        "thickness": lambda land, funcs: (funcs["surface"] - land),
-        "limiter": lambda land, funcs: (funcs["surface"] - land) / (funcs["surface"] - land + TINY),
-        "depth": lambda land, funcs: funcs["sea_level"] - funcs["surface"],
-        "diff": lambda land, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs["depth"] ** 2),
+        Available_Funcs.surface: lambda land, funcs: ((land + funcs["sed"]) + land) + abs((land + funcs["sed"]) - land),
+        Available_Funcs.thickness: lambda land, funcs: (funcs["surface"] - land),
+        Available_Funcs.limiter: lambda land, funcs: (funcs["surface"] - land) / (funcs["surface"] - land + TINY),
+        Available_Funcs.depth: lambda land, funcs: funcs["sea_level"] - funcs["surface"],
+        Available_Funcs.diff: lambda land, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs["depth"] ** 2),
     }
 
     def __init__(self, solver, wanted_funcs):
-        if not set(wanted_funcs).issubset(set(Carst_Functions.available_funcs)):
+        if not set(wanted_funcs).issubset(set(Available_Funcs)):
             raise ValueError("Your wanted functions require an unsupported function")
 
         self._solver = solver
