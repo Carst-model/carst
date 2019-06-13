@@ -36,12 +36,23 @@ class FunctionContainer():
                 raise ValueError()
 
         self._solver = solver
-        self.functions = {
+        self._functions = {
             func_name: fd.Function(
                 self._solver.function_space,
                 name=str(func_name),
             ) for func_name in wanted_funcs
         }
+
+    def __len__(self):
+        return len(self._functions)
+
+    def __getitem__(self, key):
+        if not isinstance(key, carst_funcs):
+            raise TypeError("The key must be a member of carst_funcs")
+        return self._functions[key]
+
+    def __iter__(self):
+        return iter(self._functions.keys())
 
     def interpolate(self, function_names):
         if isinstance(function_names, carst_funcs):
