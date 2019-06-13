@@ -54,11 +54,20 @@ class FunctionContainer():
     def __iter__(self):
         return iter(self._functions.keys())
 
+    def add(self, function_name, function):
+        if not isinstance(function_name, carst_funcs):
+            raise TypeError("function_name must be a carst_funcs instance")
+        if not isinstance(function, fd.Function):
+            raise TypeError("function must be firedrake.Function")
+        if function_name in self._functions.keys():
+            raise IndexError("There is already a copy of that function")
+        self._functions[function_name] = function
+
     def interpolate(self, *function_names):
         for name in function_names:
             try:
                 self._functions[name].interpolate(
-                    FunctionContainer._interpolation_funcs[name](self._solver.land, self.functions)
+                    FunctionContainer._interpolation_funcs[name](self._solver.land, self._functions)
                 )
             except KeyError:
                 pass
