@@ -32,25 +32,27 @@ class FunctionContainer():
     def __init__(self, solver, wanted_funcs):
         # Type checking
         for func in wanted_funcs:
-            if not isinstance(func, "carst_funcs"):
+            if not isinstance(func, carst_funcs):
                 raise ValueError()
 
         self._solver = solver
         self.functions = {
-            fd.Function(
+            func_name: fd.Function(
                 self._solver.function_space,
-                name=func_name
+                name=str(func_name),
             ) for func_name in wanted_funcs
         }
 
     def interpolate(self, function_names):
-        if isinstance(function_names, "carst_funcs"):
+        if isinstance(function_names, carst_funcs):
             if function_names not in self.functions.keys():
                 raise ValueError("That function isn't in this object")
 
             to_interpolate = [function_names]
         else:
             to_interpolate = function_names
+            # Bait an exception if to_interpolate isn't iterable
+            iter(to_interpolate)
 
         for function in to_interpolate:
             try:
