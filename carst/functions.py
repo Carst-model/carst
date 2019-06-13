@@ -54,21 +54,11 @@ class FunctionContainer():
     def __iter__(self):
         return iter(self._functions.keys())
 
-    def interpolate(self, function_names):
-        if isinstance(function_names, carst_funcs):
-            if function_names not in self.functions.keys():
-                raise ValueError("That function isn't in this object")
-
-            to_interpolate = [function_names]
-        else:
-            to_interpolate = function_names
-            # Bait an exception if to_interpolate isn't iterable
-            iter(to_interpolate)
-
-        for function in to_interpolate:
+    def interpolate(self, *function_names):
+        for name in function_names:
             try:
-                self.functions[function].interpolate(
-                    FunctionContainer._interpolation_funcs[function](self._solver.land, self.functions)
+                self._functions[name].interpolate(
+                    FunctionContainer._interpolation_funcs[name](self._solver.land, self.functions)
                 )
             except KeyError:
                 pass
