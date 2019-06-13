@@ -6,7 +6,7 @@ TINY = 1e-10
 
 
 # To add a function, add it to carst_funcs then add the corresponding logic to
-# Function_Container._interpolation_funcs (make sure you get the key right!)
+# FunctionContainer._interpolation_funcs (make sure you get the key right!)
 class carst_funcs(enum.Enum):
     sed = 1
     sed_old = 2
@@ -19,7 +19,7 @@ class carst_funcs(enum.Enum):
     sea_level = 9
 
 
-class Function_Container():
+class FunctionContainer():
     _interpolation_funcs = {
         carst_funcs.surface: lambda land, funcs: (land + funcs[carst_funcs.sed] + land) + abs((land + funcs[carst_funcs.sed]) - land),
         carst_funcs.thickness: lambda land, funcs: (funcs[carst_funcs.surface] - land),
@@ -42,13 +42,19 @@ class Function_Container():
             ) for func_name in wanted_funcs
         }
 
-    def interpolate(self, function_name):
-        if function_name not in self.functions.keys():
-            raise ValueError("That function isn't in this object")
+    def interpolate(self, function_names):
+        if isinstance(function_names, "carst_funcs"):
+            if function_names not in self.functions.keys():
+                raise ValueError("That function isn't in this object")
 
-        try:
-            self.functions[function_name].interpolate(
-                Function_Container._interpolation_funcs[function_name](self._solver.land, self.functions)
-            )
-        except KeyError:
-            pass
+            to_interpolate = [function_names]
+        else:
+            to_interpolate = function_names
+
+        for function in to_interpolate:
+            try:
+                self.functions[function].interpolate(
+                    FunctionContainer._interpolation_funcs[function](self._solver.land, self.functions)
+                )
+            except KeyError:
+                pass
