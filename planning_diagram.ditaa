@@ -1,17 +1,22 @@
-/------------------------------\          /--------------\
-| cGRE      Carst Module       |          | Functions    |
-| o Command Line Interface     |<---------+ cBLU         |
-| o Initialiser:               |          | o Diffusion  |
-|   o Mesh                     |          | o Carbonates |
-|   o Topography (Seabed)      |          \--------------/
-|   o Initial Sediment         |          /-----------\
-| o Loop:                      |<---------+ Diffusion |
-|   o Between start + end time |          |  Module   |
-|   o Diffusion                |          \-----------/
-|   o Carbonates               |          /-----------\
-|   o Check if output is needed|<---------+ Carbonate |
-\---------------------+--------/          |  Module   |
-                      |                   \-----------/
+   /---------------------\    /----------------------\       
+   | cRED Options        |    | FunctionContainer    |       
+   | o Mesh              |    | cBLU                 +----------------------------+
+   | o Topography        |    | o Diffusion          |                            |
+   | o Initial Sediment  |    | o Carbonates         |                            |
+   | o Wanted processes  |    \----------------------/                            |
+   \----------+----------/                                                        |
+              |                                                                   |
+              v                                                                   |
+/------------------------------\                                                  |
+| cGRE      Carst              |                                                  |
+| o Command Line Interface     |                                                  |
+| o Loop:                      |                             /-----------------\  |
+|   o Between start + end time | Method to Iterate Over +----+ DiffusionSolver |<-+
+|   o Diffusion                |<-----------------------+    | o F             |  |
+|   o Carbonates               |                        |    \-----------------/  |
+|   o Check if output is needed|                        |    /-----------------\  |
+\---------------------+--------/                        +----+ CarbonateSolver |<-+
+                      |                                      \-----------------/
                       v
 /---------------------------------\
 | cYEL Output                     |  
