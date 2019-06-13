@@ -2,24 +2,35 @@
 import math
 import copy
 import firedrake as fd
-from time_advancer import DiffusionSolver
+from solvers import DiffusionSolver
+
+START_TIME = 0
+OUTPUT_TIME = 500
+TIME_STEP = 50
+OUTPUT_FOLDER = "output"
 
 # Initialise a solver and add land
-my_solver_real_scale = DiffuseSolver(
+my_solver_real_scale = DiffusionSolver(
     fd.RectangleMesh(50, 25, 10000, 5000),
     lambda coord_space, function_space: fd.project(
         100 * fd.tanh(0.0005 * (coord_space[0] - 6000)),
         function_space,
         name="starting_topo"
     ),
-    "output",
+    fd.Constant(25 * fd.sin(START_TIME / 100000 / 180 * math.pi)),
+    (
+        START_TIME,
+        TIME_STEP,
+        OUTPUT_TIME,
+    ),
+    OUTPUT_FOLDER,
 )
 
 # DiffuseSolver doesn't play nice with deepcopy apparently
 # my_solver_carbonates = copy.deepcopy(my_solver_real_scale)
 
 # Run with a sample initial condition
-my_solver_real_scale.diffuse_real_scale_test(
+my_solver_real_scale.set_condition(
     fd.project(
         (
             20000
@@ -36,12 +47,10 @@ my_solver_real_scale.diffuse_real_scale_test(
                 -((my_solver_real_scale.coordinate_space[0]-4000) * (my_solver_real_scale.coordinate_space[0]-4000))
                 / (2 * 1000 * 1000)
             )
-        ), my_solver_real_scale.function_space),
-    0,
-    20000,
-    50,
-    500,
+        ), my_solver_real_scale.function_space)
 )
+while my_solver_real_scale.time < 20000:
+    my_solver_real_scale.advance()
 
 # Run with a sample initial condition
 # my_solver_carbonates.diffuse_real_scale_test(
