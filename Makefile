@@ -9,7 +9,7 @@ test: firedrake
 	@echo "Running simulation"
 	@( \
 		source ./firedrake/bin/activate; \
-		python3 carst/carst_it1.py; \
+		python3 carst/tests.py; \
 	)
 	@echo "Running visualisation"
 	@python3 scripts/stratiMesh.py; \
