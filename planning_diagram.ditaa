@@ -1,0 +1,20 @@
+/------------------------------\          /--------------\
+| cGRE      Carst Module       |          | Functions    |
+| o Command Line Interface     |<---------+ cBLU         |
+| o Initialiser:               |          | o Diffusion  |
+|   o Mesh                     |          | o Carbonates |
+|   o Topography (Seabed)      |          \--------------/
+|   o Initial Sediment         |          /-----------\
+| o Loop:                      |<---------+ Diffusion |
+|   o Between start + end time |          |  Module   |
+|   o Diffusion                |          \-----------/
+|   o Carbonates               |          /-----------\
+|   o Check if output is needed|<---------+ Carbonate |
+\---------------------+--------/          |  Module   |
+                      |                   \-----------/
+                      v
+/---------------------------------\
+| cYEL Output                     |  
+| o Take a set of output files    |
+| o Write any data passed to them |
+\---------------------------------/
