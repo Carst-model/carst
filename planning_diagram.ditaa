@@ -14,12 +14,16 @@
 |   o Between start + end time | Method to Iterate Over +----+ DiffusionSolver |<-+
 |   o Diffusion                |<-----------------------+    | o F             |  |
 |   o Carbonates               |                        |    \-----------------/  |
-|   o Check if output is needed|                        |    /-----------------\  |
-\---------------------+--------/                        +----+ CarbonateSolver |<-+
-                      |                                      \-----------------/
-                      v
-/---------------------------------\
-| cYEL Output                     |  
-| o Take a set of output files    |
-| o Write any data passed to them |
-\---------------------------------/
+|   o Check if output is needed|                        |            ^            |
+\---------------------+--------/                        |            :            |
+                      |                                 |    /-----------------\  |
+                      v                                 +----+ CarbonateSolver |<-+
+/---------------------------------\                          \-----------------/
+| cYEL Output                     |                                  |  ^
+| o Take a set of output files    |   /----------------------\       :  :
+| o Write any data passed to them |   | cPNKGenericSolver    |       +=-+
+\---------------------------------/   | o Method to override +=------+
+                                      | for looping          |                      
+                                      \----------------------/                      
+                                                            
+                                                            

@@ -2,7 +2,7 @@
 import math
 import copy
 import firedrake as fd
-from carst import DiffuseSolver
+from time_advancer import DiffusionSolver
 
 # Initialise a solver and add land
 my_solver_real_scale = DiffuseSolver(

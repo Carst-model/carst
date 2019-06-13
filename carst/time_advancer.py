@@ -7,7 +7,7 @@ from functions import carst_funcs, FunctionContainer
 TINY = 1e-10
 
 
-class DiffuseSolver:
+class DiffusionSolver:
     # Declare the names of the functions we want for each solver
     _wanted_functions = {
         "real_scale": (
@@ -50,7 +50,7 @@ class DiffuseSolver:
         self.land = land(self.coordinate_space, self.function_space)
 
     def _get_files(self, func_group):
-        return {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in DiffuseSolver._wanted_files[func_group]}
+        return {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in DiffusionSolver._wanted_files[func_group]}
 
     def diffuse_real_scale_test(self, initial_condition, start_time, end_time, time_step, output_time):
         if not hasattr(self, "land"):
@@ -60,7 +60,7 @@ class DiffuseSolver:
 
         # Initialise our functions and out files
         out_files = self._get_files("real_scale")
-        funcs = FunctionContainer(self, DiffuseSolver._wanted_functions["real_scale"])
+        funcs = FunctionContainer(self, DiffusionSolver._wanted_functions["real_scale"])
 
         # Currently not easy to slot this workaround into FunctionContainer so it can stay here for now
         # if we don't do this, the sea level ouput has a random function name.
@@ -154,7 +154,7 @@ class DiffuseSolver:
             raise AttributeError("No land passed to module")
 
         # Initialise our functions and out files
-        funcs = FunctionContainer(self, DiffuseSolver._wanted_functions["carbonates"])
+        funcs = FunctionContainer(self, DiffusionSolver._wanted_functions["carbonates"])
         out_files = self._get_files("carbonates")
         sl_time_constant = fd.Constant(25 * fd.sin(start_time / 1000000 / 180 * math.pi))
         funcs.functions[carst_funcs.sea_level] = fd.Function(
