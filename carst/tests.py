@@ -7,14 +7,12 @@ from carst import DiffuseSolver
 # Initialise a solver and add land
 my_solver_real_scale = DiffuseSolver(
     fd.RectangleMesh(50, 25, 10000, 5000),
-    "output",
-)
-my_solver_real_scale.add_land(
-    fd.project(
-        100 * fd.tanh(0.0005 * (my_solver_real_scale.coordinate_space[0] - 6000)),
-        my_solver_real_scale.function_space,
-        name="starting_topo",
+    lambda coord_space, function_space: fd.project(
+        100 * fd.tanh(0.0005 * (coord_space[0] - 6000)),
+        function_space,
+        name="starting_topo"
     ),
+    "output",
 )
 
 # DiffuseSolver doesn't play nice with deepcopy apparently

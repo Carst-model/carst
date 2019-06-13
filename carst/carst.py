@@ -37,7 +37,7 @@ class DiffuseSolver:
         "carbonates": ("surfaces", "layer_data", "sea_level", "land"),
     }
 
-    def __init__(self, base_mesh, output_folder):
+    def __init__(self, base_mesh, land, output_folder):
         # Need to check whether the output folder actually exists with os
         self.output_folder = output_folder
 
@@ -47,10 +47,7 @@ class DiffuseSolver:
         self.function_space = fd.FunctionSpace(self.mesh, "CG", 1)
         self.test_function = fd.TestFunction(self.function_space)
 
-    # Needed because land is defined in terms of things we instantiate in __init__
-    # This needs a better solution
-    def add_land(self, land):
-        self.land = land
+        self.land = land(self.coordinate_space, self.function_space)
 
     def _get_files(self, func_group):
         return {file_name: fd.File("{0}/{1}.pvd".format(self.output_folder, file_name)) for file_name in DiffuseSolver._wanted_files[func_group]}
