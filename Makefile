@@ -1,4 +1,4 @@
-.PHONY: test lint clean
+.PHONY: test lint clean plan
 
 firedrake:
 	@echo "Building lastest firedrake version"
@@ -29,3 +29,9 @@ clean:
 	rm -r firedrake firedrake-install
 	@echo "Removing versioneer manifest..."
 	rm MANIFEST.in
+
+plan:
+	@echo "Removing old diagram..."
+	rm planning_diagram.png
+	@echo "Building diagram..."
+	ditaa planning_diagram.ditaa
