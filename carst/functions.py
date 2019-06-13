@@ -17,6 +17,7 @@ class carst_funcs(enum.Enum):
     diff = 7
     light_attenuation = 8
     sea_level = 9
+    slf = 10
 
 
 class FunctionContainer():
