@@ -64,6 +64,7 @@ class DiffusionSolver(GenericSolver):
         carst_funcs.thickness,
         carst_funcs.depth,
         carst_funcs.diff,
+        # carst_funcs.sea_level,
     )
     _WANTED_FILES = ("layer_data", "surfaces", "sea_level", "land")
 
@@ -81,16 +82,12 @@ class DiffusionSolver(GenericSolver):
             )
         ) * fd.dx
 
-        # Currently not easy to slot this workaround into FunctionContainer so it can stay here for now
-        # if we don't do this, the sea level ouput has a random function name.
-        # Not helpful...
-        self._funcs.add(carst_funcs.slf, fd.Function(self.function_space, name="sea_level"))
+        # Add the sea_level function as an interpolation of _sea_level_constant
         self._funcs.add(carst_funcs.sea_level, fd.Function(
             self.function_space,
             val=fd.interpolate(self._sea_level_constant, self.function_space),
-            name="sea_level",
+            name=str(carst_funcs.sea_level),
         ))
-        self._funcs[carst_funcs.slf].interpolate(self._funcs[carst_funcs.sea_level])
 
         self._funcs.interpolate(
             carst_funcs.surface,
