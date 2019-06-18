@@ -1,59 +1,39 @@
-import firedrake as fd
-from functions import carst_funcs, FunctionContainer
-from processors import PROCESSOR_NEEDED_FUNCS, advance_carbonates, advance_diffusion
+# import firedrake as fd
+from functions import carst_funcs
+from processors import advance_carbonates, advance_diffusion
+from options import CarstOptions
 
 
 class CarstModel():
     _WANTED_FILES = {
-        "land": lambda land: (land),
-        "layer_data": lambda funcs: (funcs[carst_funcs.diff_coeff], funcs[carst_funcs.thickness], funcs[carst_funcs.depth]),
-        "surfaces": lambda funcs: (funcs[carst_funcs.surface], funcs[carst_funcs.sed]),
-        "sea_level": lambda funcs: (funcs[carst_funcs.sea_level]),
+        "land": lambda solver: (solver.land),
+        "layer_data": lambda solver: (
+            solver.funcs[carst_funcs.diff_coeff],
+            solver.funcs[carst_funcs.thickness],
+            solver.funcs[carst_funcs.depth],
+        ),
+        "surfaces": lambda solver: (
+            solver.funcs[carst_funcs.surface],
+            solver.funcs[carst_funcs.sed],
+        ),
+        "sea_level": lambda solver: (solver.funcs[carst_funcs.sea_level]),
     }
 
-    def __init__(self, base_mesh, land, sea_level_constant, times, **kw_args):
-        if not isinstance(base_mesh, fd.mesh.MeshGeometry):
-            raise TypeError("base_mesh not of type firedrake.Mesh")
-        if not isinstance(sea_level_constant, fd.Constant):
-            raise TypeError("sea_level_constant not of type firedrake.Constant")
+    def __init__(self, options):
+        if not isinstance(options, CarstOptions):
+            raise TypeError("Arg to CarstModel must be of type CarstOptions")
 
-        # Need to check whether the output folder actually exists with os
+        useful_info = options.useful_info
+        self.mesh, self.coordinate_space, self.function_space, self.test_function, self._sea_level_constant, self.land = useful_info[0]
 
-        # Store the passed values
-        self._sea_level_constant = sea_level_constant
-        self.current_time, self._time_step, self._output_time = times
-        self._output_folder = kw_args.get("output_folder")
-        self.mesh = base_mesh
+        self.current_time, self._output_time, self._time_step = useful_info[1]
 
-        # Mark the steps in the process we want
-        self.enabled_steps = {
-            "diffusion": kw_args.get("diffusion"),
-            "carbonates": kw_args.get("carbonates"),
-        }
+        self._funcs = useful_info[2]
+        self.enabled_steps = useful_info[3]
+        self._out_files = useful_info[4]
 
-        # Generate our workspace from the mesh
-        self.coordinate_space = fd.SpatialCoordinate(self.mesh)
-        self.function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-        self.test_function = fd.TestFunction(self.function_space)
-
-        # Get our land, based in our workspace
-        self._land = land(self.coordinate_space, self.function_space)
-
-        # Initialise the funcs we need
-        self._funcs = FunctionContainer(
-            self,
-            {
-                func_name for processor in PROCESSOR_NEEDED_FUNCS.values() for func_name in processor
-            },
-        )
-        # self._funcs.interpolate(*type(self)._INIT_INTERPOLATION_ORDER)
-
-        # Initialise _out_files and write land to them (if we have an output passed)
-        if self._output_folder is not None:
-            self._out_files = {
-                file_name: fd.File("{0}/{1}.pvd".format(self._output_folder, file_name)) for file_name in type(self)._WANTED_FILES.keys()
-            }
-            self._out_files["land"].write(self._land)
+        self._out_files.output_selective("land")
+        # Interpolate the funcs for the first time here!!!
 
     @property
     def land(self):
@@ -71,14 +51,6 @@ class CarstModel():
         self._funcs[carst_funcs.sed].assign(condition)
         self._funcs[carst_funcs.sed_old].assign(condition)
 
-    def output(self):
-        for file_name in type(self)._WANTED_FILES:
-            if file_name != "land":
-                self._out_files[file_name].write(
-                    *type(self)._WANTED_FILES[file_name](self._funcs),
-                    time=self.current_time,
-                )
-
     def advance(self):
         self.current_time += self._time_step
         if self.enabled_steps.get("diffusion"):
@@ -87,4 +59,4 @@ class CarstModel():
             self._funcs[carst_funcs.sed] = self._funcs[carst_funcs.sed] + advance_carbonates(self._funcs, self.carbonate_production)
 
         if self.current_time % self._output_time == 0:
-            self.output()
+            self._out_files.output()
