@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import firedrake as fd
 from functions import FunctionContainer
 from output import OutputFilesCollection
@@ -5,7 +6,7 @@ from processors import PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions:
-    def __init__(self, base_mesh, land, sea_level_constant, times, output_folder, **kw_args):
+    def __init__(self, base_mesh, land, sea_level_constant, times, **kw_args):
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level_constant, fd.Constant):
@@ -23,6 +24,12 @@ class CarstOptions:
             "diffusion": bool(kw_args.get("diffusion")),
             "carbonates": bool(kw_args.get("carbonates")),
         }
+        if self.enabled_steps["carbonates"]:
+            self._carbonate_production = kw_args.get("carbonate_production")
+            if self._carbonate_production is None:
+                raise AttributeError("If carbonate modelling is enabled, a value for the carbonate production rate is required")
+        else:
+            self._carbonate_production = None
 
         # Generate our workspace from the mesh
         self.coordinate_space = fd.SpatialCoordinate(self.mesh)
@@ -41,13 +48,13 @@ class CarstOptions:
         )
 
         # Initialise _out_files
-        if output_folder is not None:
-            self._out_files = OutputFilesCollection(type(self)._WANTED_FILES)
+        if kw_args.get("output_folder") is not None:
+            self._out_files = OutputFilesCollection(kw_args.get("output_folder"), self.enabled_steps)
 
     @property
     def useful_data(self):
-        return (
-            (   # Variables for the function space + constants
+        return {
+            "workspace": tuple(   # Variables for the function space + constants
                 self.mesh,
                 self.coordinate_space,
                 self.function_space,
@@ -55,12 +62,15 @@ class CarstOptions:
                 self._sea_level_constant,
                 self._land,
             ),
-            (   # The timing-related vars
+            "times": tuple(   # The timing-related vars
                 self.current_time,
                 self._output_time,
                 self._time_step,
             ),
-            self._funcs,
-            self.enabled_steps,
-            self._out_files,
-        )
+            "funcs": self._funcs,
+            "enabled_steps": self.enabled_steps,
+            "output_files": self._out_files,
+            "optional": tuple(
+                self._carbonate_production,
+            ),
+        }

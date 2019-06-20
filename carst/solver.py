@@ -23,16 +23,18 @@ class CarstModel():
         if not isinstance(options, CarstOptions):
             raise TypeError("Arg to CarstModel must be of type CarstOptions")
 
-        useful_info = options.useful_info
-        self.mesh, self.coordinate_space, self.function_space, self.test_function, self._sea_level_constant, self.land = useful_info[0]
+        useful_info = options.useful_data
+        self.mesh, self.coordinate_space, self.function_space, self.test_function, self._sea_level_constant, self._land = useful_info["workspace"]
 
-        self.current_time, self._output_time, self._time_step = useful_info[1]
+        self.current_time, self._output_time, self._time_step = useful_info["times"]
 
-        self._funcs = useful_info[2]
-        self.enabled_steps = useful_info[3]
-        self._out_files = useful_info[4]
+        self._funcs = useful_info["funcs"]
+        self.enabled_steps = useful_info["enabled_steps"]
+        if self.enabled_steps["carbonates"]:
+            self.carbonate_production = useful_info["optional"][0]
+        self._out_files = useful_info["output_files"]
 
-        self._out_files.output_selective("land")
+        self._out_files.output(self, ["land"])
         # Interpolate the funcs for the first time here!!!
 
     @property

@@ -3,6 +3,7 @@ import math
 import copy
 import firedrake as fd
 from solver import CarstModel
+from options import CarstOptions
 
 START_TIME = 0
 OUTPUT_TIME = 500
@@ -10,7 +11,7 @@ TIME_STEP = 50
 OUTPUT_FOLDER = "output"
 
 # Initialise a solver and add land
-my_solver_real_scale = CarstModel(
+my_options = CarstOptions(
     fd.RectangleMesh(50, 25, 10000, 5000),
     lambda coord_space, function_space: fd.project(
         100 * fd.tanh(0.0005 * (coord_space[0] - 6000)),
@@ -27,6 +28,7 @@ my_solver_real_scale = CarstModel(
     diffusion=True,
     carbonates=False,
 )
+my_solver_real_scale = CarstModel(my_options)
 
 # DiffuseSolver doesn't play nice with deepcopy apparently
 # my_solver_carbonates = copy.deepcopy(my_solver_real_scale)
