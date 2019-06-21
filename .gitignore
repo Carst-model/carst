@@ -1,10 +1,4 @@
 **/__pycache__/*
-**/*.log
-**/*.vtu
-**/*.xmf
-**/*.hdf5
-**/*.pvd
-firedrake/*
+firedrake*
 output/*
-firedrake-install
 tags
