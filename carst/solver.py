@@ -1,4 +1,4 @@
-from functions import carst_funcs
+from functions import carst_funcs as f
 from processors import advance_carbonates, advance_diffusion, INIT_INTERPOLATION_ORDER
 from options import CarstOptions
 
@@ -7,15 +7,15 @@ class CarstModel():
     _WANTED_FILES = {
         "land": lambda solver: (solver.land),
         "layer_data": lambda solver: (
-            solver.funcs[carst_funcs.diff_coeff],
-            solver.funcs[carst_funcs.thickness],
-            solver.funcs[carst_funcs.depth],
+            solver.funcs[f.diff_coeff],
+            solver.funcs[f.thickness],
+            solver.funcs[f.depth],
         ),
         "surfaces": lambda solver: (
-            solver.funcs[carst_funcs.surface],
-            solver.funcs[carst_funcs.sed],
+            solver.funcs[f.surface],
+            solver.funcs[f.sed],
         ),
-        "sea_level": lambda solver: (solver.funcs[carst_funcs.sea_level]),
+        "sea_level": lambda solver: (solver.funcs[f.sea_level]),
     }
 
     def __init__(self, options):
@@ -50,15 +50,15 @@ class CarstModel():
         return self._time_step
 
     def set_condition(self, condition):
-        self._funcs[carst_funcs.sed].assign(condition)
-        self._funcs[carst_funcs.sed_old].assign(condition)
+        self._funcs[f.sed].assign(condition)
+        self._funcs[f.sed_old].assign(condition)
 
     def advance(self):
         self.current_time += self._time_step
         if self.enabled_steps.get("diffusion"):
-            self._funcs[carst_funcs.sed] = advance_diffusion(self)
+            self._funcs[f.sed] = advance_diffusion(self)
         if self.enabled_steps.get("carbonates"):
-            self._funcs[carst_funcs.sed] = self._funcs[carst_funcs.sed] + advance_carbonates(self._funcs, self.carbonate_production)
+            self._funcs[f.sed] = self._funcs[f.sed] + advance_carbonates(self._funcs, self.carbonate_production)
 
         if self.current_time % self._output_time == 0:
             self._out_files.output()
