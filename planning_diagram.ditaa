@@ -1,25 +1,25 @@
    /---------------------\    /----------------------\       
    | cRED Options        |    | FunctionContainer    |       
-   | o Mesh              |    | cBLU                 +----------------------------+
-   | o Topography        |    | o Diffusion          |                            |
-   | o Initial Sediment  |    | o Carbonates         |                            |
-   | o Wanted processes  |    \----------------------/                            |
-   \----------+----------/                                                        |
-              |                                                                   |
-              v                                                                   |
-/------------------------------\                                                  |
-| cGRE      Carst              |                                                  |
-| o Command Line Interface     |                                                  |
-| o Loop:                      |                             /-----------------\  |
-|   o Between start + end time | Method to Iterate Over +----+ DiffusionSolver |<-+
-|   o Diffusion                |<-----------------------+    | o F             |  |
-|   o Carbonates               |                        |    \-----------------/  |
-|   o Check if output is needed|                        |    /-----------------\  |
-\---------------------+--------/                        +----+ CarbonateSolver |<-+
-                      |                                      \-----------------/
+   | o Mesh              |    | cBLU                 +---------+
+   | o Topography        |    | o Diffusion          |         |
+   | o Initial Sediment  |    | o Carbonates         |         |
+   | o Wanted processes  |    \----------------------/         |
+   \----------+----------/                                     |
+              |                                                |
+              v                                                |
+/------------------------------\                               |
+| cGRE      Carst              |                               |
+| o Command Line Interface     |                               v
+| o Loop:                      |                      /-----------------\
+|   o Between start + end time | Method(s) to Iterate | Processors      |
+|   o Diffusion                |<---------------------+ o F             |
+|   o Carbonates               |                      \-----------------/
+|   o Check if output is needed|
+\---------------------+--------/
+                      |
                       v
 /---------------------------------\
-| cYEL Output                     |  
+| cYEL Output                     |
 | o Take a set of output files    |
 | o Write any data passed to them |
 \---------------------------------/
