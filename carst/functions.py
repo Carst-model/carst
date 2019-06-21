@@ -21,11 +21,25 @@ class carst_funcs(enum.Enum):
 
 class FunctionContainer(dict):
     _INTERPOLATION_FUNCS = {
-        carst_funcs.surface: lambda solver, funcs: (solver.land + funcs[carst_funcs.sed] + solver.land) + abs((solver.land + funcs[carst_funcs.sed]) - solver.land),
-        carst_funcs.thickness: lambda solver, funcs: (funcs[carst_funcs.surface] - solver.land),
-        carst_funcs.limiter: lambda solver, funcs: (funcs[carst_funcs.surface] - solver.land) / (funcs[carst_funcs.surface] - solver.land + TINY),
-        carst_funcs.depth: lambda solver, funcs: funcs[carst_funcs.sea_level] - funcs[carst_funcs.surface],
-        carst_funcs.diff_coeff: lambda solver, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[carst_funcs.depth] ** 2),
+        carst_funcs.surface: lambda solver, funcs: (
+            (solver.land + funcs[carst_funcs.sed] + solver.land)
+            + abs((solver.land + funcs[carst_funcs.sed]) - solver.land)
+        ),
+        carst_funcs.thickness: lambda solver, funcs: (
+            funcs[carst_funcs.surface] - solver.land
+        ),
+        carst_funcs.limiter: lambda solver, funcs: (
+            (funcs[carst_funcs.surface] - solver.land)
+            / (funcs[carst_funcs.surface] - solver.land + TINY)
+        ),
+        carst_funcs.depth: lambda solver, funcs: (
+            funcs[carst_funcs.sea_level] - funcs[carst_funcs.surface]
+        ),
+        carst_funcs.diff_coeff: lambda solver, funcs: (
+            2
+            / fd.sqrt(2 * math.pi)
+            * fd.exp(-0.5 * funcs[carst_funcs.depth] ** 2)
+        ),
         carst_funcs.sea_level: lambda solver, funcs: solver.sea_level_constant,
     }
 
