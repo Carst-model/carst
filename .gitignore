@@ -8,4 +8,3 @@ firedrake/*
 output/*
 firedrake-install
 tags
-MANIFEST.in
