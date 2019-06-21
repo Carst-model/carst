@@ -12,8 +12,6 @@ class CarstOptions:
         if not isinstance(sea_level_constant, fd.Constant):
             raise TypeError("sea_level_constant not of type firedrake.Constant")
 
-        # Need to check whether the output folder actually exists with os
-
         # Store the passed values
         self._sea_level_constant = sea_level_constant
         self.current_time, self._time_step, self._output_time = times
@@ -54,23 +52,23 @@ class CarstOptions:
     @property
     def useful_data(self):
         return {
-            "workspace": tuple(   # Variables for the function space + constants
+            "workspace": tuple((   # Variables for the function space + constants
                 self.mesh,
                 self.coordinate_space,
                 self.function_space,
                 self.test_function,
                 self._sea_level_constant,
                 self._land,
-            ),
-            "times": tuple(   # The timing-related vars
+            )),
+            "times": tuple((   # The timing-related vars
                 self.current_time,
                 self._output_time,
                 self._time_step,
-            ),
+            )),
             "funcs": self._funcs,
             "enabled_steps": self.enabled_steps,
             "output_files": self._out_files,
-            "optional": tuple(
+            "optional": tuple((
                 self._carbonate_production,
-            ),
+            )),
         }
