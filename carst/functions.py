@@ -19,7 +19,7 @@ class carst_funcs(enum.Enum):
     sea_level = 9
 
 
-class FunctionContainer():
+class FunctionContainer(dict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface: lambda solver, funcs: (solver.land + funcs[carst_funcs.sed] + solver.land) + abs((solver.land + funcs[carst_funcs.sed]) - solver.land),
         carst_funcs.thickness: lambda solver, funcs: (funcs[carst_funcs.surface] - solver.land),
@@ -31,45 +31,30 @@ class FunctionContainer():
 
     def __init__(self, solver, wanted_funcs):
         self._solver = solver
-        self._functions = {
+        super().__init__({
             func_name: fd.Function(
                 self._solver.function_space,
                 name=str(func_name),
             ) for func_name in wanted_funcs
-        }
-
-    def __len__(self):
-        return len(self._functions)
+        })
 
     def __getitem__(self, key):
         if not isinstance(key, carst_funcs):
             raise TypeError("Key not a member of carst_funcs")
-        return self._functions[key]
+        return super().__getitem__(key)
 
     def __setitem__(self, key, val):
         if not isinstance(key, carst_funcs):
             raise TypeError("Key not a member of carst_funcs")
         if not isinstance(val, fd.Function):
             raise TypeError("Value not of type firedrake.Function")
-        self._functions[key] = val
-
-    def __iter__(self):
-        return iter(self._functions.keys())
-
-    def add(self, function_name, function):
-        if not isinstance(function_name, carst_funcs):
-            raise TypeError("function_name must be a carst_funcs instance")
-        if not isinstance(function, fd.Function):
-            raise TypeError("function must be of type firedrake.Function")
-        if function_name in self._functions.keys():
-            raise IndexError("There is already a copy of that function")
-        self._functions[function_name] = function
+        super().__setitem__(key, val)
 
     def interpolate(self, *function_names):
         for name in function_names:
             try:
-                self._functions[name].interpolate(
-                    FunctionContainer._INTERPOLATION_FUNCS[name](self._solver, self._functions)
+                self[name].interpolate(
+                    FunctionContainer._INTERPOLATION_FUNCS[name](self._solver, self)
                 )
             except KeyError:
-                pass
+                continue
