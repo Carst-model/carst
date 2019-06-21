@@ -1,4 +1,3 @@
-# import firedrake as fd
 from functions import carst_funcs
 from processors import advance_carbonates, advance_diffusion
 from options import CarstOptions
