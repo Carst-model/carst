@@ -1,5 +1,5 @@
 from functions import carst_funcs
-from processors import advance_carbonates, advance_diffusion
+from processors import advance_carbonates, advance_diffusion, INIT_INTERPOLATION_ORDER
 from options import CarstOptions
 
 
@@ -35,6 +35,7 @@ class CarstModel():
 
         self._out_files.output(self, ["land"])
         # Interpolate the funcs for the first time here!!!
+        self.funcs.interpolate(*INIT_INTERPOLATION_ORDER)
 
     @property
     def land(self):
