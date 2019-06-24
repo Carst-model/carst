@@ -3,8 +3,8 @@ import copy
 import math
 
 import firedrake as fd
-from options import CarstOptions
-from solver import CarstModel
+from carst.options import CarstOptions
+from carst.solver import CarstModel
 
 START_TIME = 0
 OUTPUT_TIME = 500
