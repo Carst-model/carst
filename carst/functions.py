@@ -1,6 +1,7 @@
-import firedrake as fd
 import enum
 import math
+
+import firedrake as fd
 
 TINY = 1e-10
 

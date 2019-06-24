@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import math
 import copy
+import math
+
 import firedrake as fd
-from solver import CarstModel
 from options import CarstOptions
+from solver import CarstModel
 
 START_TIME = 0
 OUTPUT_TIME = 500
