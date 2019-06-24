@@ -1,7 +1,6 @@
+import firedrake as fd
 import enum
 import math
-
-import firedrake as fd
 
 TINY = 1e-10
 
@@ -22,23 +21,26 @@ class carst_funcs(enum.Enum):
 
 class FunctionContainer(dict):
     _INTERPOLATION_FUNCS = {
-        carst_funcs.surface:
-        lambda solver, funcs: ((solver.land + funcs[carst_funcs.sed] + solver.
-                                land) + abs((solver.land + funcs[
-                                    carst_funcs.sed]) - solver.land)),
-        carst_funcs.thickness:
-        lambda solver, funcs: (funcs[carst_funcs.surface] - solver.land),
-        carst_funcs.limiter:
-        lambda solver, funcs: ((funcs[carst_funcs.surface] - solver.land) / (
-            funcs[carst_funcs.surface] - solver.land + TINY)),
-        carst_funcs.depth:
-        lambda solver, funcs: (funcs[carst_funcs.sea_level] - funcs[carst_funcs
-                                                                    .surface]),
-        carst_funcs.diff_coeff:
-        lambda solver, funcs: (2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[
-            carst_funcs.depth]**2)),
-        carst_funcs.sea_level:
-        lambda solver, funcs: solver.sea_level_constant,
+        carst_funcs.surface: lambda solver, funcs: (
+            (solver.land + funcs[carst_funcs.sed] + solver.land)
+            + abs((solver.land + funcs[carst_funcs.sed]) - solver.land)
+        ),
+        carst_funcs.thickness: lambda solver, funcs: (
+            funcs[carst_funcs.surface] - solver.land
+        ),
+        carst_funcs.limiter: lambda solver, funcs: (
+            (funcs[carst_funcs.surface] - solver.land)
+            / (funcs[carst_funcs.surface] - solver.land + TINY)
+        ),
+        carst_funcs.depth: lambda solver, funcs: (
+            funcs[carst_funcs.sea_level] - funcs[carst_funcs.surface]
+        ),
+        carst_funcs.diff_coeff: lambda solver, funcs: (
+            2
+            / fd.sqrt(2 * math.pi)
+            * fd.exp(-0.5 * funcs[carst_funcs.depth] ** 2)
+        ),
+        carst_funcs.sea_level: lambda solver, funcs: solver.sea_level_constant,
     }
 
     def __init__(self, solver, wanted_funcs):
@@ -47,8 +49,7 @@ class FunctionContainer(dict):
             func_name: fd.Function(
                 self._solver.function_space,
                 name=str(func_name),
-            )
-            for func_name in wanted_funcs
+            ) for func_name in wanted_funcs
         })
 
     def __getitem__(self, key):
@@ -67,7 +68,7 @@ class FunctionContainer(dict):
         for name in function_names:
             try:
                 self[name].interpolate(
-                    FunctionContainer._INTERPOLATION_FUNCS[name](self._solver,
-                                                                 self))
+                    FunctionContainer._INTERPOLATION_FUNCS[name](self._solver, self)
+                )
             except KeyError:
                 continue

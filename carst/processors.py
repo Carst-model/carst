@@ -3,12 +3,19 @@ from functions import carst_funcs as f
 
 # Set numerical constants
 TINY = 1e-10
-DIFFUSION_EQUATION_GENERIC = lambda solver: (fd.inner(
-    (solver.funcs[f.sed] - solver.funcs[f.sed_old]) / solver.time_step,
-    solver.test_function,
-) + (solver.funcs[f.limiter] * solver.funcs[f.diff_coeff] * fd.inner(
-    fd.grad(solver.funcs[f.sed] + solver.land), fd.grad(solver.test_function)))
-                                             ) * fd.dx
+DIFFUSION_EQUATION_GENERIC = lambda solver: (
+    fd.inner(
+        (solver.funcs[f.sed] - solver.funcs[f.sed_old]) / solver.time_step,
+        solver.test_function,
+    ) + (
+        solver.funcs[f.limiter]
+        * solver.funcs[f.diff_coeff]
+        * fd.inner(
+            fd.grad(solver.funcs[f.sed] + solver.land),
+            fd.grad(solver.test_function)
+        )
+    )
+) * fd.dx
 
 # Set interpolation order constants
 INIT_INTERPOLATION_ORDER = (
@@ -50,5 +57,7 @@ PROCESSOR_NEEDED_FUNCS = {
         f.limiter,
         f.diff_coeff,
     ),
-    "carbonates": (f.light_attenuation, ),
+    "carbonates": (
+        f.light_attenuation,
+    ),
 }
