@@ -1,7 +1,8 @@
 import os
 
 import firedrake as fd
-from functions import carst_funcs
+
+from .functions import carst_funcs
 
 _WANTED_FILES = {
     "land": lambda solver: tuple((

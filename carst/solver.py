@@ -1,7 +1,7 @@
-from functions import carst_funcs as f
-from options import CarstOptions
-from processors import (INIT_INTERPOLATION_ORDER, advance_carbonates,
-                        advance_diffusion)
+from .functions import carst_funcs as f
+from .options import CarstOptions
+from .processors import (INIT_INTERPOLATION_ORDER, advance_carbonates,
+                         advance_diffusion)
 
 
 class CarstModel():

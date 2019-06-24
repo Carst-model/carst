@@ -1,5 +1,6 @@
 import firedrake as fd
-from functions import carst_funcs as f
+
+from .functions import carst_funcs as f
 
 # Set numerical constants
 TINY = 1e-10

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import firedrake as fd
-from functions import FunctionContainer
-from output import OutputFilesCollection
-from processors import PROCESSOR_NEEDED_FUNCS
+
+from .functions import FunctionContainer
+from .output import OutputFilesCollection
+from .processors import PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions:
