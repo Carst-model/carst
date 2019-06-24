@@ -1,3 +1,4 @@
+from .functions import DIFF_COEFF_PROJECT, FunctionContainer
 from .functions import carst_funcs as f
 from .options import CarstOptions
 from .processors import (INIT_INTERPOLATION_ORDER, advance_carbonates,
@@ -28,15 +29,18 @@ class CarstModel():
 
         self.current_time, self._output_time, self._time_step = useful_info["times"]
 
-        self._funcs = useful_info["funcs"]
+        self._funcs = FunctionContainer(self, useful_info["wanted_funcs"])
+        print("Created the following functions:")
+        print("\n".join((str(func) for func in self._funcs.items())))
+
         self.enabled_steps = useful_info["enabled_steps"]
         if self.enabled_steps["carbonates"]:
             self.carbonate_production = useful_info["optional"][0]
         self._out_files = useful_info["output_files"]
 
         self._out_files.output(self, ["land"])
-        # Interpolate the funcs for the first time here!!!
         self.funcs.interpolate(*INIT_INTERPOLATION_ORDER)
+        self._funcs[f.diff_coeff].project(DIFF_COEFF_PROJECT(self))
 
     @property
     def land(self):

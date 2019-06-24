@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import firedrake as fd
 
-from .functions import FunctionContainer
 from .output import OutputFilesCollection
 from .processors import PROCESSOR_NEEDED_FUNCS
 
@@ -39,12 +38,10 @@ class CarstOptions:
         self._land = land(self.coordinate_space, self.function_space)
 
         # Initialise the funcs we need
-        self._funcs = FunctionContainer(
-            self,
-            {
-                func_name for processor in PROCESSOR_NEEDED_FUNCS.values() for func_name in processor
-            },
-        )
+        self._wanted_funcs = list(PROCESSOR_NEEDED_FUNCS["basic"])
+        for process in self.enabled_steps:
+            if self.enabled_steps[process]:
+                self._wanted_funcs.extend(PROCESSOR_NEEDED_FUNCS[process])
 
         # Initialise _out_files
         if kw_args.get("output_folder") is not None:
@@ -66,7 +63,7 @@ class CarstOptions:
                 self._output_time,
                 self._time_step,
             )),
-            "funcs": self._funcs,
+            "wanted_funcs": set(self._wanted_funcs),
             "enabled_steps": self.enabled_steps,
             "output_files": self._out_files,
             "optional": tuple((

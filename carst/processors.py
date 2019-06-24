@@ -20,11 +20,11 @@ DIFFUSION_EQUATION_GENERIC = lambda solver: (
 
 # Set interpolation order constants
 INIT_INTERPOLATION_ORDER = (
+    f.sea_level,
     f.surface,
     f.thickness,
     f.limiter,
     f.depth,
-    f.sea_level,
 )
 INTERPOLATION_ORDER = (
     f.limiter,
@@ -33,6 +33,25 @@ INTERPOLATION_ORDER = (
     f.diff_coeff,
     f.thickness,
 )
+
+PROCESSOR_NEEDED_FUNCS = {
+    "basic": (
+        f.sed,
+        f.sed_old,
+        f.surface,
+        f.thickness,
+        f.depth,
+    ),
+    "diffusion": (
+        f.sed,
+        f.sed_old,
+        f.limiter,
+        f.diff_coeff,
+    ),
+    "carbonates": (
+        f.light_attenuation,
+    ),
+}
 
 
 def advance_diffusion(solver):
@@ -49,16 +68,3 @@ def advance_diffusion(solver):
 def advance_carbonates(funcs, carbonate_production):
     funcs.interpolate(f.light_attenuation)
     return carbonate_production * funcs[f.light_attenuation]
-
-
-PROCESSOR_NEEDED_FUNCS = {
-    "diffusion": (
-        f.sed,
-        f.sed_old,
-        f.limiter,
-        f.diff_coeff,
-    ),
-    "carbonates": (
-        f.light_attenuation,
-    ),
-}

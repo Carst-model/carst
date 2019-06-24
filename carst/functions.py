@@ -20,6 +20,13 @@ class carst_funcs(enum.Enum):
     sea_level = 9
 
 
+def DIFF_COEFF_PROJECT(solver):
+    return ((
+        (2 / fd.sqrt(2 * math.pi))
+        * fd.exp(-0.5 * solver.funcs[carst_funcs.depth] ** 2)
+    ) + 0.2022)
+
+
 class FunctionContainer(dict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface: lambda solver, funcs: (
