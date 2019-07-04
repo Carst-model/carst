@@ -1,12 +1,18 @@
-.PHONY: test lint clean diamond
+.PHONY: test lint clean
+
+# Paths for setup
 PROJECT_DIR := $(shell pwd -P)
 FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
-SPUD_CHECK := firedrake/usr/include/spud
 
+# Paths to alias long targets
+DIAMOND_BIN := firedrake/usr/bin/diamond
+DXDIFF_BIN := firedrake/usr/bin/dxdiff
+
+# For sourcing the shell file to activate the firedrake venv
 FIREDRAKE_ACTIVATION := firedrake/bin/activate
-LIBSPUD_CONFIG_FLAGS := --prefix=$(FIREDRAKE_VENV_FULL)/usr
 
-all: diamond_default.rng $(SPUD_CHECK) firedrake
+# Temporary test
+all: diamond_default.rng $(DIAMOND_BIN) firedrake
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
@@ -39,12 +45,12 @@ clean:
 	@echo "Removing venv..."
 	-rm -r firedrake firedrake-install
 
-diamond_default.rng: $(SPUD_CHECK) diamond_defaut.rnc
+diamond_default.rng: $(DIAMOND_BIN) diamond_default.rnc
 	@echo "Building schema..."
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
-		spud-preprocess diamond_defaut.rnc; \
+		spud-preprocess diamond_default.rnc; \
 	}
 
 planning_diagram.png:
@@ -57,12 +63,20 @@ firedrake:
 	python3 firedrake-install --no-package-manager
 
 
-$(SPUD_CHECK): firedrake spud
-	@echo "Building spud..."
+$(DIAMOND_BIN): firedrake spud $(DXDIFF_BIN)
+	@echo "Installing diamond into venv..."
 	{ \
 		set -e; \
-		cd spud; \
-		./configure $(LIBSPUD_CONFIG_FLAGS); \
-		make; \
-		make install; \
+		source $(FIREDRAKE_ACTIVATION); \
+		cd spud/diamond; \
+		pip install .; \
+	}
+
+$(DXDIFF_BIN): spud firedrake
+	@echo "Installing dxdiff into venv..."
+	{ \
+		set -e; \
+		source $(FIREDRAKE_ACTIVATION); \
+		cd spud/dxdiff; \
+		pip install .; \
 	}
