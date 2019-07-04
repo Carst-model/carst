@@ -5,15 +5,15 @@ PROJECT_DIR := $(shell pwd -P)
 FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
 
 # Paths to alias long targets
-DIAMOND_BIN := firedrake/usr/lib/python3.7/site-packages/diamond
-DXDIFF_BIN := firedrake/usr/lib/python3.7/site-packages/dxdiff
-SPUD_BASE := firedrake/usr/share/spud/spud_base.rnc firedrake/usr/share/spud/spud_base.rng
+DIAMOND_PIP := firedrake/lib/python3.7/site-packages/diamond
+DXDIFF_PIP := firedrake/lib/python3.7/site-packages/dxdiff
+SPUD_BASE := firedrake/share/spud/spud_base.rnc
 
 # For sourcing the shell file to activate the firedrake venv
 FIREDRAKE_ACTIVATION := firedrake/bin/activate
 
 # Temporary test
-all: diamond_default.rng $(DIAMOND_BIN) firedrake
+all: diamond_default.rng $(DIAMOND_PIP) firedrake
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
@@ -23,11 +23,13 @@ all: diamond_default.rng $(DIAMOND_BIN) firedrake
 test: firedrake carst basic_tests.py scripts
 	@echo "Running simulation"
 	{ \
+		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
 		python3 basic_tests.py; \
 	}
 	@echo "Running visualisation"
 	{ \
+		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
 		python3 scripts/stratiMesh.py; \
 	}
@@ -46,12 +48,12 @@ clean:
 	@echo "Removing venv..."
 	-rm -rf firedrake firedrake-install
 
-diamond_default.rng: $(DIAMOND_BIN) diamond_default.rnc
+diamond_default.rng: $(DIAMOND_PIP) diamond_default.rnc
 	@echo "Building schema..."
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
-		spud-preprocess diamond_default.rnc; \
+		./firedrake/usr/bin/spud-preprocess diamond_default.rnc; \
 	}
 
 planning_diagram.png:
@@ -64,9 +66,9 @@ firedrake:
 	python3 firedrake-install --no-package-manager
 
 # Diamond alias for easy terminal use
-diamond: $(DIAMOND_BIN)
+diamond: $(DIAMOND_PIP)
 
-$(DIAMOND_BIN): firedrake spud/diamond $(DXDIFF_BIN) $(SPUD_BASE)
+$(DIAMOND_PIP): firedrake spud/diamond $(DXDIFF_PIP) $(SPUD_BASE)
 	@echo "Installing diamond into venv..."
 	{ \
 		set -e; \
@@ -78,10 +80,10 @@ $(DIAMOND_BIN): firedrake spud/diamond $(DXDIFF_BIN) $(SPUD_BASE)
 
 $(SPUD_BASE): spud/schema firedrake
 	@echo "Installing base spud..."
-	mkdir -p firedrake/usr/share/spud
-	cp spud/schema/spud_base.* firedrake/usr/share/spud
+	mkdir -p firedrake/share/spud
+	cp spud/schema/spud_base.* firedrake/share/spud
 
-$(DXDIFF_BIN): spud/dxdiff firedrake
+$(DXDIFF_PIP): spud/dxdiff firedrake
 	@echo "Installing dxdiff into venv..."
 	{ \
 		set -e; \
