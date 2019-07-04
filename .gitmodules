@@ -1,0 +1,4 @@
+[submodule "spud"]
+	path = spud
+	url = https://github.com/FluidityProject/spud
+	branch = gtk3_python3

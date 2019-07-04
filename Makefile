@@ -1,18 +1,29 @@
-.PHONY: test lint clean plan
+.PHONY: test lint clean diamond
+PROJECT_DIR := $(shell pwd -P)
+FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
+SPUD_CHECK := firedrake/usr/include/spud
 
-firedrake:
-	@echo "Building lastest firedrake version"
-	curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
-	python3 firedrake-install --no-package-manager
+FIREDRAKE_ACTIVATION := firedrake/bin/activate
+LIBSPUD_CONFIG_FLAGS := --prefix=$(FIREDRAKE_VENV_FULL)/usr
 
-test: firedrake
+all: diamond_default.rng $(SPUD_CHECK) firedrake
+	{ \
+		set -e; \
+		source $(FIREDRAKE_ACTIVATION); \
+		diamond -s diamond_defaut.rng; \
+	}
+
+test: firedrake carst basic_tests.py scripts
 	@echo "Running simulation"
-	@( \
-		source ./firedrake/bin/activate; \
+	{ \
+		source $(FIREDRAKE_ACTIVATION); \
 		python3 basic_tests.py; \
-	)
+	}
 	@echo "Running visualisation"
-	@python3 scripts/stratiMesh.py; \
+	{ \
+		source $(FIREDRAKE_ACTIVATION); \
+		python3 scripts/stratiMesh.py; \
+	}
 
 lint:
 	@echo "Linting carst codebase"
@@ -25,13 +36,33 @@ lint:
 	@flake8 scripts
 
 clean:
-	@echo "Removing firedrake..."
-	rm -r firedrake firedrake-install
-	@echo "Removing versioneer manifest..."
-	rm MANIFEST.in
+	@echo "Removing venv..."
+	-rm -r firedrake firedrake-install
 
-plan:
-	@echo "Removing old diagram..."
-	rm planning_diagram.png
+diamond_default.rng: $(SPUD_CHECK) diamond_defaut.rnc
+	@echo "Building schema..."
+	{ \
+		set -e; \
+		source $(FIREDRAKE_ACTIVATION); \
+		spud-preprocess diamond_defaut.rnc; \
+	}
+
+planning_diagram.png:
 	@echo "Building diagram..."
 	ditaa planning_diagram.ditaa
+
+firedrake:
+	@echo "Building lastest firedrake version"
+	curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
+	python3 firedrake-install --no-package-manager
+
+
+$(SPUD_CHECK): firedrake spud
+	@echo "Building spud..."
+	{ \
+		set -e; \
+		cd spud; \
+		./configure $(LIBSPUD_CONFIG_FLAGS); \
+		make; \
+		make install; \
+	}
