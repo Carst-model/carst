@@ -1,4 +1,4 @@
-.PHONY: test lint clean
+.PHONY: test lint clean diamond
 
 # Paths for setup
 PROJECT_DIR := $(shell pwd -P)
@@ -17,7 +17,7 @@ all: diamond_default.rng $(DIAMOND_BIN) firedrake
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
-		diamond -s diamond_defaut.rng; \
+		diamond -s diamond_default.rng; \
 	}
 
 test: firedrake carst basic_tests.py scripts
@@ -44,7 +44,7 @@ lint:
 
 clean:
 	@echo "Removing venv..."
-	-rm -r firedrake firedrake-install
+	-rm -rf firedrake firedrake-install
 
 diamond_default.rng: $(DIAMOND_BIN) diamond_default.rnc
 	@echo "Building schema..."
@@ -63,6 +63,8 @@ firedrake:
 	curl -O https://raw.githubusercontent.com/firedrakeproject/firedrake/master/scripts/firedrake-install
 	python3 firedrake-install --no-package-manager
 
+# Diamond alias for easy terminal use
+diamond: $(DIAMOND_BIN)
 
 $(DIAMOND_BIN): firedrake spud/diamond $(DXDIFF_BIN) $(SPUD_BASE)
 	@echo "Installing diamond into venv..."
@@ -74,7 +76,7 @@ $(DIAMOND_BIN): firedrake spud/diamond $(DXDIFF_BIN) $(SPUD_BASE)
 		pip install .; \
 	}
 
-$(SPUD_BASE): spud/schema
+$(SPUD_BASE): spud/schema firedrake
 	@echo "Installing base spud..."
 	mkdir -p firedrake/usr/share/spud
 	cp spud/schema/spud_base.* firedrake/usr/share/spud
