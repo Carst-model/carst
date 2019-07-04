@@ -2,3 +2,4 @@
 firedrake*
 output/*
 tags
+**/*.rng

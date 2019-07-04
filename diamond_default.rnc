@@ -1,9 +1,27 @@
 include "spud_base.rnc"
 
-start = 
+start =
     (
-        element Carst_Test {
-            comment,
-            element test_string { anystring }
+        ## Please fill all fields!
+        element Carst-Options {
+            ## The time for the model to start
+            times,
+            ## The folder to write the output files to
+            element Output-Directory { anystring }
+        }
+    )
+
+times =
+    (
+        ## Please consider that all times are in years(?)
+        element Times {
+            ## The time for the model to start simulating from
+            element Start-Time { real },
+            ## The time to simulate as the "step time"
+            element Step-Time { real },
+            ## The time to output to output at
+            element Output-Time { real },
+            ## The time to stop simulating
+            element End-Time { real }
         }
     )
