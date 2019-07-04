@@ -1,0 +1,9 @@
+include "spud_base.rnc"
+
+start = 
+    (
+        element Carst_Test = {
+            comment,
+            element test_string { anystring }
+        }
+    )

@@ -5,8 +5,9 @@ PROJECT_DIR := $(shell pwd -P)
 FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
 
 # Paths to alias long targets
-DIAMOND_BIN := firedrake/usr/bin/diamond
-DXDIFF_BIN := firedrake/usr/bin/dxdiff
+DIAMOND_BIN := firedrake/usr/lib/python3.7/site-packages/diamond
+DXDIFF_BIN := firedrake/usr/lib/python3.7/site-packages/dxdiff
+SPUD_BASE := firedrake/usr/share/spud/spud_base.rnc firedrake/usr/share/spud/spud_base.rng
 
 # For sourcing the shell file to activate the firedrake venv
 FIREDRAKE_ACTIVATION := firedrake/bin/activate
@@ -63,16 +64,22 @@ firedrake:
 	python3 firedrake-install --no-package-manager
 
 
-$(DIAMOND_BIN): firedrake spud $(DXDIFF_BIN)
+$(DIAMOND_BIN): firedrake spud/diamond $(DXDIFF_BIN) $(SPUD_BASE)
 	@echo "Installing diamond into venv..."
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
 		cd spud/diamond; \
+		pip install -r requirements.txt; \
 		pip install .; \
 	}
 
-$(DXDIFF_BIN): spud firedrake
+$(SPUD_BASE): spud/schema
+	@echo "Installing base spud..."
+	mkdir -p firedrake/usr/share/spud
+	cp spud/schema/spud_base.* firedrake/usr/share/spud
+
+$(DXDIFF_BIN): spud/dxdiff firedrake
 	@echo "Installing dxdiff into venv..."
 	{ \
 		set -e; \
