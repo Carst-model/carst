@@ -482,7 +482,7 @@ class stratiMesh:
                 cellD = np.sum(dtmp[newcells-1], axis=1)/3.
                 cellH = np.sum(htmp[newcells-1], axis=1)/3.
                 oldcells = newcells
-                if l == 0:
+                if l == 1:
                     ctmp = np.copy(celltmp)
                     cellDtmp = np.copy(cellD)
                     cellHtmp = np.copy(cellH)
