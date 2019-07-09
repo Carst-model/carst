@@ -5,8 +5,6 @@ from typing import Iterable
 
 import firedrake as fd
 
-TINY = 1e-10
-
 
 # To add a function, add it to carst_funcs then add the corresponding logic to
 # FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)
@@ -25,24 +23,22 @@ class carst_funcs(enum.Enum):
 class FunctionContainer(UserDict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
-        lambda land, funcs, sea_level_constant: ((land + funcs[
-            carst_funcs.sed] + land) + abs((land + funcs[carst_funcs.sed]) -
-                                           land)),
+        lambda funcs, options: ((options["land"] + funcs[
+            carst_funcs.sed] + options["land"]) + abs((options["land"] + funcs[
+                carst_funcs.sed]) - options["land"])),
         carst_funcs.thickness:
-        lambda land, funcs, sea_level_constant: (funcs[carst_funcs.surface] -
-                                                 land),
+        lambda funcs, options: (funcs[carst_funcs.surface] - options["land"]),
         carst_funcs.limiter:
-        lambda land, funcs, sea_level_constant: ((funcs[
-            carst_funcs.surface] - land) / (funcs[carst_funcs.surface] - land +
-                                            TINY)),
+        lambda funcs, options: ((funcs[carst_funcs.surface] - options[
+            "land"]) / (funcs[carst_funcs.surface] - options["land"] + 1e-10)),
         carst_funcs.depth:
-        lambda land, funcs, sea_level_constant: (funcs[carst_funcs.sea_level] -
-                                                 funcs[carst_funcs.surface]),
+        lambda funcs, options: (funcs[carst_funcs.sea_level] - funcs[
+            carst_funcs.surface]),
         carst_funcs.diff_coeff:
-        lambda land, funcs, sea_level_constant: (2 / fd.sqrt(
-            2 * math.pi) * fd.exp(-0.5 * funcs[carst_funcs.depth]**2)),
+        lambda funcs, options: (2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[
+            carst_funcs.depth]**2)),
         carst_funcs.sea_level:
-        lambda land, funcs, sea_level_constant: sea_level_constant,
+        lambda funcs, options: options["sea_level_constant"],
     }
 
     def __init__(self, solver, wanted_funcs: Iterable[carst_funcs]):
@@ -55,6 +51,7 @@ class FunctionContainer(UserDict):
             for func_name in wanted_funcs
         })
 
+    # Enforce type checking on __getitem__ and __setitem__
     def __getitem__(self, key: carst_funcs) -> fd.Function:
         if not isinstance(key, carst_funcs):
             raise TypeError("Key not a member of carst_funcs")
@@ -75,8 +72,8 @@ class FunctionContainer(UserDict):
         for name in function_names:
             try:
                 self[name].interpolate(
-                    FunctionContainer._INTERPOLATION_FUNCS[name](
-                        options["land"], self, options["sea_level_constant"]))
+                    FunctionContainer._INTERPOLATION_FUNCS[name](self,
+                                                                 options))
             except KeyError:
                 continue
 

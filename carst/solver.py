@@ -40,8 +40,7 @@ class CarstModel():
         self._funcs = FunctionContainer(self, options["wanted_funcs"])
 
         # Perform first output and interpolation
-        self._out_files.output(self._funcs, self._options["land"],
-                               self._times["current_time"], ("land", ))
+        self._out_files.output(self._funcs, self._options, ("land", ))
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
 
         # Initialise a diffusion equation if it's enabled, project diff_coeff
@@ -94,5 +93,4 @@ class CarstModel():
 
         # Output if necessary
         if self.output_this_cycle:
-            self._out_files.output(self._funcs, self._options["land"],
-                                   self._times["current_time"])
+            self._out_files.output(self._funcs, self._options)
