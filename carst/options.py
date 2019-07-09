@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 import firedrake as fd
 
 from .output import OutputFilesCollection
-from .processes import DIFFUSION_EQUATION_GENERIC, PROCESSOR_NEEDED_FUNCS
+from .processes import PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions(UserDict):
@@ -34,7 +34,7 @@ class CarstOptions(UserDict):
         }
         vals["carbonate_production"] = kw_args.get("carbonate_production")
         if vals["enabled_steps"]["carbonates"]:
-            if not vals["carbonate_production"]:
+            if vals["carbonate_production"] is None:
                 raise AttributeError(
                     "If carbonate modelling is enabled, a value for the carbonate production rate is required"
                 )

@@ -29,7 +29,9 @@ class CarstModel():
     def __init__(self, options: CarstOptions):
         # Type Checking
         if not isinstance(options, CarstOptions):
-            raise TypeError("Arg to CarstModel must be of type CarstOptions")
+            raise TypeError(
+                f"options must be of type CarstOptions, not {str(type(options))}"
+            )
 
         # Get values from options
         self._options = options
@@ -37,7 +39,7 @@ class CarstModel():
         self._out_files = self._options["out_files"]
 
         # Initialise function objects
-        self._funcs = FunctionContainer(self, options["wanted_funcs"])
+        self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
 
         # Perform first output and interpolation
         self._out_files.output(self._funcs, self._options, ("land", ))

@@ -1,12 +1,14 @@
 import enum
 import math
 from collections import UserDict
-from typing import Iterable
+from typing import Sequence
 
 import firedrake as fd
 
+from .options import CarstOptions
 
-# To add a function, add it to carst_funcs then add the corresponding logic to
+
+# To add a function, add it's label to carst_funcs then add the corresponding logic to
 # FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)
 class carst_funcs(enum.Enum):
     sed = 1
@@ -21,6 +23,7 @@ class carst_funcs(enum.Enum):
 
 
 class FunctionContainer(UserDict):
+    # Workaround for python's lack of a switch/match statement >:(
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
         lambda funcs, options: ((options["land"] + funcs[
@@ -41,8 +44,9 @@ class FunctionContainer(UserDict):
         lambda funcs, options: options["sea_level_constant"],
     }
 
-    def __init__(self, solver, wanted_funcs: Iterable[carst_funcs]):
-        function_space = solver.function_space
+    def __init__(self, options: CarstOptions,
+                 wanted_funcs: Sequence[carst_funcs]):
+        function_space = options["function_space"]
         super().__init__({
             func_name: fd.Function(
                 function_space,
@@ -54,20 +58,20 @@ class FunctionContainer(UserDict):
     # Enforce type checking on __getitem__ and __setitem__
     def __getitem__(self, key: carst_funcs) -> fd.Function:
         if not isinstance(key, carst_funcs):
-            raise TypeError("Key not a member of carst_funcs")
+            raise TypeError(f"Key {str(key)} not a member of carst_funcs")
         return super().__getitem__(key)
 
     def __setitem__(self, key: carst_funcs, val: fd.Function):
         if not isinstance(key, carst_funcs):
-            raise TypeError("Key not a member of carst_funcs")
+            raise TypeError(f"Key {str(key)} not a member of carst_funcs")
         if not isinstance(val, fd.Function):
-            raise TypeError("Value not of type firedrake.Function")
+            raise TypeError(f"Value {str(val)} not of type firedrake.Function")
         super().__setitem__(key, val)
 
     def interpolate(
             self,
-            options,
-            *function_names: Iterable[carst_funcs],
+            options: CarstOptions,
+            *function_names: carst_funcs,
     ):
         for name in function_names:
             try:
