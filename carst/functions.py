@@ -25,29 +25,31 @@ class carst_funcs(enum.Enum):
 class FunctionContainer(UserDict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
-        lambda solver, funcs: ((solver.land + funcs[carst_funcs.sed] + solver.
-                                land) + abs((solver.land + funcs[
-                                    carst_funcs.sed]) - solver.land)),
+        lambda land, funcs, sea_level_constant: ((land + funcs[
+            carst_funcs.sed] + land) + abs((land + funcs[carst_funcs.sed]) -
+                                           land)),
         carst_funcs.thickness:
-        lambda solver, funcs: (funcs[carst_funcs.surface] - solver.land),
+        lambda land, funcs, sea_level_constant: (funcs[carst_funcs.surface] -
+                                                 land),
         carst_funcs.limiter:
-        lambda solver, funcs: ((funcs[carst_funcs.surface] - solver.land) / (
-            funcs[carst_funcs.surface] - solver.land + TINY)),
+        lambda land, funcs, sea_level_constant: ((funcs[
+            carst_funcs.surface] - land) / (funcs[carst_funcs.surface] - land +
+                                            TINY)),
         carst_funcs.depth:
-        lambda solver, funcs: (funcs[carst_funcs.sea_level] - funcs[carst_funcs
-                                                                    .surface]),
+        lambda land, funcs, sea_level_constant: (funcs[carst_funcs.sea_level] -
+                                                 funcs[carst_funcs.surface]),
         carst_funcs.diff_coeff:
-        lambda solver, funcs: (2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[
-            carst_funcs.depth]**2)),
+        lambda land, funcs, sea_level_constant: (2 / fd.sqrt(
+            2 * math.pi) * fd.exp(-0.5 * funcs[carst_funcs.depth]**2)),
         carst_funcs.sea_level:
-        lambda solver, funcs: solver.sea_level_constant,
+        lambda land, funcs, sea_level_constant: sea_level_constant,
     }
 
     def __init__(self, solver, wanted_funcs: Iterable[carst_funcs]):
-        self._solver = solver
+        function_space = solver.function_space
         super().__init__({
             func_name: fd.Function(
-                self._solver.function_space,
+                function_space,
                 name=str(func_name),
             )
             for func_name in wanted_funcs
@@ -65,16 +67,17 @@ class FunctionContainer(UserDict):
             raise TypeError("Value not of type firedrake.Function")
         super().__setitem__(key, val)
 
-    def interpolate(self, *function_names: Iterable[carst_funcs]):
+    def interpolate(self, land, sea_level_constant,
+                    *function_names: Iterable[carst_funcs]):
         for name in function_names:
             try:
                 self[name].interpolate(
-                    FunctionContainer._INTERPOLATION_FUNCS[name](self._solver,
-                                                                 self))
+                    FunctionContainer._INTERPOLATION_FUNCS[name](
+                        land, self, sea_level_constant))
             except KeyError:
                 continue
 
 
-def DIFF_COEFF_PROJECT(solver: FunctionContainer) -> fd.Function:
+def DIFF_COEFF_PROJECT(funcs: FunctionContainer) -> fd.Function:
     return (((2 / fd.sqrt(2 * math.pi)) *
-             fd.exp(-0.5 * solver.funcs[carst_funcs.depth]**2)) + 0.2022)
+             fd.exp(-0.5 * funcs[carst_funcs.depth]**2)) + 0.2022)

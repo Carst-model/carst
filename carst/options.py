@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from collections import UserDict
 from typing import Callable, Tuple
 
 import firedrake as fd
@@ -7,78 +8,53 @@ from .output import OutputFilesCollection
 from .processors import PROCESSOR_NEEDED_FUNCS
 
 
-class CarstOptions:
+class CarstOptions(UserDict):
     def __init__(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
                  sea_level_constant: fd.Constant,
-                 times: Tuple[float, float, float], **kw_args: dict):
+                 times: Tuple[float, float, float], output_folder,
+                 **kw_args: dict):
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level_constant, fd.Constant):
             raise TypeError(
                 "sea_level_constant not of type firedrake.Constant")
 
+        vals = dict()
+
         # Store the passed values
-        self._sea_level_constant = sea_level_constant
-        self.current_time, self._time_step, self._output_time = times
-        self.mesh = base_mesh
+        vals["sea_level_constant"] = sea_level_constant
+        vals["times"] = dict(
+            zip(("current_time", "time_step", "output_time"), times))
+        vals["mesh"] = base_mesh
 
         # Mark the steps in the process we want
-        self.enabled_steps = {
+        vals["enabled_steps"] = {
             "diffusion": bool(kw_args.get("diffusion")),
             "carbonates": bool(kw_args.get("carbonates")),
         }
-        if self.enabled_steps["carbonates"]:
-            self._carbonate_production = kw_args.get("carbonate_production")
-            if self._carbonate_production is None:
-                raise AttributeError(
-                    "If carbonate modelling is enabled, a value for the carbonate production rate is required"
-                )
-        else:
-            self._carbonate_production = None
+        vals["carbonate_production"] = kw_args.get("carbonate_production")
+        if vals["enabled_steps"][
+                "carbonates"] and not vals["carbonate_production"]:
+            raise AttributeError(
+                "If carbonate modelling is enabled, a value for the carbonate production rate is required"
+            )
 
         # Generate our workspace from the mesh
-        self.coordinate_space = fd.SpatialCoordinate(self.mesh)
-        self.function_space = fd.FunctionSpace(self.mesh, "CG", 1)
-        self.test_function = fd.TestFunction(self.function_space)
+        vals["coordinate_space"] = fd.SpatialCoordinate(vals["mesh"])
+        vals["function_space"] = fd.FunctionSpace(vals["mesh"], "CG", 1)
+        vals["test_function"] = fd.TestFunction(vals["function_space"])
 
         # Get our land, based in our workspace
-        self._land = land(self.coordinate_space, self.function_space)
+        vals["land"] = land(vals["coordinate_space"], vals["function_space"])
 
         # Initialise the funcs we need
-        self._wanted_funcs = list(PROCESSOR_NEEDED_FUNCS["basic"])
-        for process in self.enabled_steps:
-            if self.enabled_steps[process]:
-                self._wanted_funcs.extend(PROCESSOR_NEEDED_FUNCS[process])
+        vals["wanted_funcs"] = list(PROCESSOR_NEEDED_FUNCS["basic"])
+        for process in vals["enabled_steps"]:
+            if vals["enabled_steps"][process]:
+                vals["wanted_funcs"].extend(PROCESSOR_NEEDED_FUNCS[process])
 
         # Initialise _out_files
-        if kw_args.get("output_folder") is not None:
-            self._out_files = OutputFilesCollection(
-                kw_args.get("output_folder"), self.enabled_steps)
+        vals["out_files"] = OutputFilesCollection(output_folder,
+                                                  vals["enabled_steps"])
 
-    @property
-    def useful_data(self):
-        return {
-            "workspace":
-            tuple((  # Variables for the function space + constants
-                self.mesh,
-                self.coordinate_space,
-                self.function_space,
-                self.test_function,
-                self._sea_level_constant,
-                self._land,
-            )),
-            "times":
-            tuple((  # The timing-related vars
-                self.current_time,
-                self._output_time,
-                self._time_step,
-            )),
-            "wanted_funcs":
-            set(self._wanted_funcs),
-            "enabled_steps":
-            self.enabled_steps,
-            "output_files":
-            self._out_files,
-            "optional":
-            tuple((self._carbonate_production, )),
-        }
+        super().__init__(vals)

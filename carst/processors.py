@@ -5,12 +5,16 @@ from .functions import carst_funcs as f
 
 # Set numerical constants
 TINY = 1e-10
-DIFFUSION_EQUATION_GENERIC = lambda solver: (fd.inner(
-    (solver.funcs[f.sed] - solver.funcs[f.sed_old]) / solver.time_step,
-    solver.test_function,
-) + (solver.funcs[f.limiter] * solver.funcs[f.diff_coeff] * fd.inner(
-    fd.grad(solver.funcs[f.sed] + solver.land), fd.grad(solver.test_function)))
-                                             ) * fd.dx
+
+
+def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer, land,
+                               time_step: float, test_function) -> fd.Function:
+    return (fd.inner(
+        (funcs[f.sed] - funcs[f.sed_old]) / time_step,
+        test_function,
+    ) + funcs[f.limiter] * funcs[f.diff_coeff] * fd.inner(
+        fd.grad(funcs[f.sed] + land), fd.grad(test_function))) * fd.dx
+
 
 # Set interpolation order constants
 INIT_INTERPOLATION_ORDER = (
@@ -46,14 +50,14 @@ PROCESSOR_NEEDED_FUNCS = {
 }
 
 
-def advance_diffusion(solver) -> fd.Function:
+def advance_diffusion(funcs, land, time_step, test_function) -> fd.Function:
     # "Copy" the sed function and solve
-    sed_new = solver.funcs[f.sed].copy(False)
+    sed_new = funcs[f.sed].copy(False)
     fd.solve(
-        DIFFUSION_EQUATION_GENERIC(solver) == 0,
+        DIFFUSION_EQUATION_GENERIC(funcs, land, time_step, test_function) == 0,
         sed_new,
     )
-    solver.funcs.interpolate(*INTERPOLATION_ORDER)
+    funcs.interpolate(*INTERPOLATION_ORDER)
     return sed_new
 
 
