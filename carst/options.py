@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from typing import Callable, Tuple
+
 import firedrake as fd
 
 from .output import OutputFilesCollection
@@ -6,11 +8,14 @@ from .processors import PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions:
-    def __init__(self, base_mesh, land, sea_level_constant, times, **kw_args):
+    def __init__(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
+                 sea_level_constant: fd.Constant,
+                 times: Tuple[float, float, float], **kw_args: dict):
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level_constant, fd.Constant):
-            raise TypeError("sea_level_constant not of type firedrake.Constant")
+            raise TypeError(
+                "sea_level_constant not of type firedrake.Constant")
 
         # Store the passed values
         self._sea_level_constant = sea_level_constant
@@ -25,7 +30,9 @@ class CarstOptions:
         if self.enabled_steps["carbonates"]:
             self._carbonate_production = kw_args.get("carbonate_production")
             if self._carbonate_production is None:
-                raise AttributeError("If carbonate modelling is enabled, a value for the carbonate production rate is required")
+                raise AttributeError(
+                    "If carbonate modelling is enabled, a value for the carbonate production rate is required"
+                )
         else:
             self._carbonate_production = None
 
@@ -45,12 +52,14 @@ class CarstOptions:
 
         # Initialise _out_files
         if kw_args.get("output_folder") is not None:
-            self._out_files = OutputFilesCollection(kw_args.get("output_folder"), self.enabled_steps)
+            self._out_files = OutputFilesCollection(
+                kw_args.get("output_folder"), self.enabled_steps)
 
     @property
     def useful_data(self):
         return {
-            "workspace": tuple((   # Variables for the function space + constants
+            "workspace":
+            tuple((  # Variables for the function space + constants
                 self.mesh,
                 self.coordinate_space,
                 self.function_space,
@@ -58,15 +67,18 @@ class CarstOptions:
                 self._sea_level_constant,
                 self._land,
             )),
-            "times": tuple((   # The timing-related vars
+            "times":
+            tuple((  # The timing-related vars
                 self.current_time,
                 self._output_time,
                 self._time_step,
             )),
-            "wanted_funcs": set(self._wanted_funcs),
-            "enabled_steps": self.enabled_steps,
-            "output_files": self._out_files,
-            "optional": tuple((
-                self._carbonate_production,
-            )),
+            "wanted_funcs":
+            set(self._wanted_funcs),
+            "enabled_steps":
+            self.enabled_steps,
+            "output_files":
+            self._out_files,
+            "optional":
+            tuple((self._carbonate_production, )),
         }
