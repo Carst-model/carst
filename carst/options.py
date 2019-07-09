@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 import firedrake as fd
 
 from .output import OutputFilesCollection
-from .processors import PROCESSOR_NEEDED_FUNCS
+from .processes import PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions(UserDict):

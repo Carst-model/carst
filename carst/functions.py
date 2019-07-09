@@ -67,13 +67,16 @@ class FunctionContainer(UserDict):
             raise TypeError("Value not of type firedrake.Function")
         super().__setitem__(key, val)
 
-    def interpolate(self, land, sea_level_constant,
-                    *function_names: Iterable[carst_funcs]):
+    def interpolate(
+            self,
+            options,
+            *function_names: Iterable[carst_funcs],
+    ):
         for name in function_names:
             try:
                 self[name].interpolate(
                     FunctionContainer._INTERPOLATION_FUNCS[name](
-                        land, self, sea_level_constant))
+                        options["land"], self, options["sea_level_constant"]))
             except KeyError:
                 continue
 
