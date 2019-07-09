@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 import firedrake as fd
 
 from .output import OutputFilesCollection
-from .processes import PROCESSOR_NEEDED_FUNCS
+from .processes import DIFFUSION_EQUATION_GENERIC, PROCESSOR_NEEDED_FUNCS
 
 
 class CarstOptions(UserDict):
@@ -33,11 +33,11 @@ class CarstOptions(UserDict):
             "carbonates": bool(kw_args.get("carbonates")),
         }
         vals["carbonate_production"] = kw_args.get("carbonate_production")
-        if vals["enabled_steps"][
-                "carbonates"] and not vals["carbonate_production"]:
-            raise AttributeError(
-                "If carbonate modelling is enabled, a value for the carbonate production rate is required"
-            )
+        if vals["enabled_steps"]["carbonates"]:
+            if not vals["carbonate_production"]:
+                raise AttributeError(
+                    "If carbonate modelling is enabled, a value for the carbonate production rate is required"
+                )
 
         # Generate our workspace from the mesh
         vals["coordinate_space"] = fd.SpatialCoordinate(vals["mesh"])

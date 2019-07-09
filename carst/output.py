@@ -34,8 +34,7 @@ class OutputFilesCollection:
 
     def output(self,
                funcs: FunctionContainer,
-               land,
-               current_time: float,
+               options,
                names: Iterable[str] = None):
         to_write = self._out_files.keys() if names is None else names
         if not set(to_write).issubset(set(self._out_files.keys())):
@@ -44,6 +43,6 @@ class OutputFilesCollection:
 
         for file_name in to_write:
             self._out_files[file_name].write(
-                *_WANTED_FILES[file_name](funcs, land),
-                time=current_time,
+                *_WANTED_FILES[file_name](funcs, options["land"]),
+                time=options["times"]["current_time"],
             )

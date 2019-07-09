@@ -7,13 +7,14 @@ from .functions import carst_funcs as f
 TINY = 1e-10
 
 
-def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer, land,
-                               time_step: float, test_function) -> fd.Function:
+def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
+                               options) -> fd.Function:
     return (fd.inner(
-        (funcs[f.sed] - funcs[f.sed_old]) / time_step,
-        test_function,
-    ) + funcs[f.limiter] * funcs[f.diff_coeff] * fd.inner(
-        fd.grad(funcs[f.sed] + land), fd.grad(test_function))) * fd.dx
+        (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
+        options["test_function"],
+    ) + funcs[f.limiter] * funcs[f.diff_coeff] *
+            fd.inner(fd.grad(funcs[f.sed] + options["land"]),
+                     fd.grad(options["test_function"]))) * fd.dx
 
 
 # Set interpolation order constants
@@ -54,9 +55,7 @@ PROCESSOR_NEEDED_FUNCS = {
 def advance_diffusion(funcs: FunctionContainer, options):
     # "Copy" the sed function and solve
     fd.solve(
-        DIFFUSION_EQUATION_GENERIC(funcs, options["land"],
-                                   options["times"]["time_step"],
-                                   options["test_function"]) == 0,
+        options["diffusion_equation"] == 0,
         funcs[f.sed],
     )
     funcs.interpolate(options, *INTERPOLATION_ORDER)
