@@ -5,8 +5,6 @@ from typing import Sequence
 
 import firedrake as fd
 
-from .options import CarstOptions
-
 
 # To add a function, add it's label to carst_funcs then add the corresponding logic to
 # FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)
@@ -44,8 +42,7 @@ class FunctionContainer(UserDict):
         lambda funcs, options: options["sea_level_constant"],
     }
 
-    def __init__(self, options: CarstOptions,
-                 wanted_funcs: Sequence[carst_funcs]):
+    def __init__(self, options, wanted_funcs: Sequence[carst_funcs]):
         function_space = options["function_space"]
         super().__init__({
             func_name: fd.Function(
@@ -70,7 +67,7 @@ class FunctionContainer(UserDict):
 
     def interpolate(
             self,
-            options: CarstOptions,
+            options,
             *function_names: carst_funcs,
     ):
         for name in function_names:
