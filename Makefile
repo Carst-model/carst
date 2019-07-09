@@ -48,14 +48,6 @@ clean:
 	@echo "Removing venv..."
 	-rm -rf firedrake firedrake-install
 
-diamond_default.rng: $(DIAMOND_PIP) diamond_default.rnc
-	@echo "Building schema..."
-	{ \
-		set -e; \
-		source $(FIREDRAKE_ACTIVATION); \
-		./firedrake/usr/bin/spud-preprocess diamond_default.rnc; \
-	}
-
 planning_diagram.png:
 	@echo "Building diagram..."
 	ditaa planning_diagram.ditaa
