@@ -23,8 +23,8 @@ class carst_funcs(enum.Enum):
 class FunctionContainer(UserDict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
-        lambda funcs, options: ((2.0 * options["land"] + funcs[carst_funcs.sed]) + abs(funcs[
-                carst_funcs.sed]) / 2.0),
+        lambda funcs, options: ((((2.0 * options["land"]) + funcs[carst_funcs.sed]) + abs(funcs[
+                carst_funcs.sed])) / 2.0),
         carst_funcs.thickness:
         lambda funcs, options: (funcs[carst_funcs.surface] - options["land"]),
         carst_funcs.limiter:

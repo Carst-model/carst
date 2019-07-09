@@ -73,6 +73,8 @@ class CarstModel():
     def set_condition(self, condition):
         self._funcs[f.sed].assign(condition)
         self._funcs[f.sed_old].assign(condition)
+        print(self._funcs[f.sed].dat.data)
+
 
     @property
     def output_this_cycle(self):
@@ -94,6 +96,8 @@ class CarstModel():
         # Output if necessary
         if self.output_this_cycle:
             print("At time step: "+str(self._times['current_time']))
+            print(self._funcs[f.surface].dat.data)
+            print(self._options['land'].dat.data)
             self._out_files.output(self._funcs, self._options)
 
         # update sea level
