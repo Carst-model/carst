@@ -32,13 +32,16 @@ class OutputFilesCollection:
             for file_name in _WANTED_FILES
         }
 
-    def output(self, funcs: FunctionContainer, land, current_time: float,
-               names: Iterable[str]):
-        if not set(names).issubset(set(self._out_files.keys())):
+    def output(self,
+               funcs: FunctionContainer,
+               land,
+               current_time: float,
+               names: Iterable[str] = None):
+        to_write = self._out_files.keys() if names is None else names
+        if not set(to_write).issubset(set(self._out_files.keys())):
             raise AttributeError(
                 "Passed names list contains files not managed by this module")
 
-        to_write = self._out_files.keys() if names is None else names
         for file_name in to_write:
             self._out_files[file_name].write(
                 *_WANTED_FILES[file_name](funcs, land),

@@ -72,12 +72,14 @@ class CarstModel():
     def advance(self):
         self._times["current_time"] += self._times["time_step"]
         if self._options["enabled_steps"].get("diffusion"):
-            self._funcs[f.sed] = advance_diffusion(
-                self._funcs, self._options["land"], self._times["time_step"],
-                self._options["test_function"])
+            advance_diffusion(self._funcs, self._options["land"],
+                              self._times["time_step"],
+                              self._options["sea_level_constant"],
+                              self._options["test_function"])
         if self._options["enabled_steps"].get("carbonates"):
             self._funcs[f.sed] = self._funcs[f.sed] + advance_carbonates(
                 self._funcs, self._options["carbonate_production"])
 
         if self._times["current_time"] % self._times["output_time"] == 0:
-            self._out_files.output()
+            self._out_files.output(self._funcs, self._options["land"],
+                                   self._times["current_time"])

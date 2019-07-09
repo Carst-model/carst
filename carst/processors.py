@@ -39,6 +39,7 @@ PROCESSOR_NEEDED_FUNCS = {
         f.surface,
         f.thickness,
         f.depth,
+        f.sea_level,
     ),
     "diffusion": (
         f.sed,
@@ -50,15 +51,15 @@ PROCESSOR_NEEDED_FUNCS = {
 }
 
 
-def advance_diffusion(funcs, land, time_step, test_function) -> fd.Function:
+def advance_diffusion(funcs, land, time_step, sea_level_constant,
+                      test_function):
     # "Copy" the sed function and solve
-    sed_new = funcs[f.sed].copy(False)
     fd.solve(
         DIFFUSION_EQUATION_GENERIC(funcs, land, time_step, test_function) == 0,
-        sed_new,
+        funcs[f.sed],
     )
-    funcs.interpolate(*INTERPOLATION_ORDER)
-    return sed_new
+    funcs.interpolate(land, sea_level_constant, *INTERPOLATION_ORDER)
+    funcs[f.sed_old] = funcs[f.sed]
 
 
 def advance_carbonates(funcs: FunctionContainer,
