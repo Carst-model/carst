@@ -12,7 +12,7 @@ def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
     return (fd.inner(
         (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
         options["test_function"],
-    ) + funcs[f.limiter] * funcs[f.diff_coeff] *
+    ) + funcs[f.limiter] * 0.005 *
             fd.inner(fd.grad(funcs[f.sed] + options["land"]),
                      fd.grad(options["test_function"]))) * fd.dx
 

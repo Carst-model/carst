@@ -23,9 +23,8 @@ class carst_funcs(enum.Enum):
 class FunctionContainer(UserDict):
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
-        lambda funcs, options: ((options["land"] + funcs[
-            carst_funcs.sed] + options["land"]) + abs((options["land"] + funcs[
-                carst_funcs.sed]) - options["land"])),
+        lambda funcs, options: ((2.0 * options["land"] + funcs[carst_funcs.sed]) + abs(funcs[
+                carst_funcs.sed]) / 2.0),
         carst_funcs.thickness:
         lambda funcs, options: (funcs[carst_funcs.surface] - options["land"]),
         carst_funcs.limiter:
@@ -35,7 +34,7 @@ class FunctionContainer(UserDict):
         lambda funcs, options: (funcs[carst_funcs.sea_level] - funcs[
             carst_funcs.surface]),
         carst_funcs.diff_coeff:
-        lambda funcs, options: (2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[
+        lambda funcs, options: (2. / fd.sqrt(2. * math.pi) * fd.exp(-0.5 * funcs[
             carst_funcs.depth]**2)),
         carst_funcs.sea_level:
         lambda funcs, options: options["sea_level_constant"],

@@ -1,5 +1,5 @@
 import copy
-
+import firedrake as fd
 from .functions import DIFF_COEFF_PROJECT, FunctionContainer
 from .functions import carst_funcs as f
 from .options import CarstOptions
@@ -40,7 +40,7 @@ class CarstModel():
         self._funcs = FunctionContainer(self, options["wanted_funcs"])
 
         # Perform first output and interpolation
-        self._out_files.output(self._funcs, self._options, ("land", ))
+        self._out_files.output(self._funcs, self._options)
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
 
         # Initialise a diffusion equation if it's enabled, project diff_coeff
@@ -93,4 +93,8 @@ class CarstModel():
 
         # Output if necessary
         if self.output_this_cycle:
+            print("At time step: "+str(self._times['current_time']))
             self._out_files.output(self._funcs, self._options)
+
+        # update sea level
+        self._funcs[f.sea_level].assign(25*fd.sin(self._times['current_time']/100000*180/3.14159))
