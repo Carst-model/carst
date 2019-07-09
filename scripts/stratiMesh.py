@@ -76,7 +76,7 @@ class stratiMesh:
         ----------
         """
 
-        pvtu = self.folder + "/" + 'land_0.vtu'
+        pvtu = os.path.join(self.folder,'land_0.vtu')
         reader = vtk.vtkXMLUnstructuredGridReader()
         reader.SetFileName(pvtu)
         reader.Update()
@@ -93,7 +93,7 @@ class stratiMesh:
         coords = np.array([vtkData.GetTuple3(i) for i in range(vtkData.GetNumberOfTuples())])
 
         # now get original land surface, which is held in the surface variable
-        name = "Starting_topo"
+        name = "starting_topo"
         try:
           pointdata=output.GetPointData()
           vtkdata=pointdata.GetScalars(name)
@@ -129,7 +129,7 @@ class stratiMesh:
         reader.SetFileName(pvtu)
         reader.Update()
         output = reader.GetOutput()
-        name = "depth"
+        name = "carst_funcs.depth"
         try:
           pointdata=output.GetPointData()
           vtkdata=pointdata.GetScalars(name)
@@ -143,7 +143,7 @@ class stratiMesh:
             raise Exception("ERROR: couldn't find point or cell scalar field data with name "+name+" in file "+pvtu+".")
         
         palaeoH = np.array([vtkdata.GetTuple1(i) for i in range(vtkdata.GetNumberOfTuples())])
-        name = "thickness"
+        name = "carst_funcs.thickness"
         try:
           pointdata=output.GetPointData()
           vtkdata=pointdata.GetScalars(name)
@@ -164,7 +164,7 @@ class stratiMesh:
         reader.SetFileName(pvtu)
         reader.Update()
         output = reader.GetOutput()
-        name = "surface"
+        name = "carst_funcs.surface"
         try:
           pointdata=output.GetPointData()
           vtkdata=pointdata.GetScalars(name)
@@ -503,6 +503,3 @@ class stratiMesh:
 
         return
 
-
-mesh = stratiMesh(folder='.', xdmfName='stratal_series', dispTime=5000.)
-mesh.outputSteps(startTime=240000., endTime=245000.)
