@@ -39,6 +39,9 @@ class CarstModel():
         # Initialise function objects
         self._funcs = FunctionContainer(self, options["wanted_funcs"])
 
+        # init sea level
+        t = self._times["current_time"]
+        self._funcs[f.sea_level].assign(eval(self._options["sea_level"]))
         # Perform first output and interpolation
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
 
@@ -99,4 +102,6 @@ class CarstModel():
         self._times["current_time"] += self._times["time_step"]
 
         # update sea level
-        self._funcs[f.sea_level].assign(25*fd.sin(self._times['current_time']/100000*180/3.14159))
+        t = self._times["current_time"]
+        self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
+        

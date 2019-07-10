@@ -16,9 +16,9 @@ my_options = CarstOptions(
     fd.RectangleMesh(50, 25, 10000, 5000),
     lambda coord_space, function_space: fd.project(100 * fd.tanh(0.0005 * (
         coord_space[0] - 6000)),
-                                                   function_space,
-                                                   name="starting_topo"),
-    fd.Constant(25 * fd.sin(START_TIME / 100000 / 180 * math.pi)),
+             function_space,
+             name="starting_topo"),
+    "25 * fd.sin(t / 50000 * 180 / 3.142)",
     (
         START_TIME,
         TIME_STEP,

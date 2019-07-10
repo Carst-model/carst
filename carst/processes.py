@@ -19,7 +19,7 @@ def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
 
 # Set interpolation order constants
 INIT_INTERPOLATION_ORDER = (
-    f.sea_level,
+    #f.sea_level,
     f.surface,
     f.thickness,
     f.limiter,

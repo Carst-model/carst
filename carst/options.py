@@ -10,19 +10,19 @@ from .processes import DIFFUSION_EQUATION_GENERIC, PROCESSOR_NEEDED_FUNCS
 
 class CarstOptions(UserDict):
     def __init__(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
-                 sea_level_constant: fd.Constant,
+                 sea_level: fd.Constant,
                  times: Tuple[float, float, float], output_folder,
                  **kw_args: dict):
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
-        if not isinstance(sea_level_constant, fd.Constant):
+        if not isinstance(sea_level, str):
             raise TypeError(
-                "sea_level_constant not of type firedrake.Constant")
+                "sea_level_constant not of type str")
 
         vals = dict()
 
         # Store the passed values
-        vals["sea_level_constant"] = sea_level_constant
+        vals["sea_level"] = sea_level
         vals["times"] = dict(
             zip(("current_time", "time_step", "output_time"), times))
         vals["mesh"] = base_mesh
