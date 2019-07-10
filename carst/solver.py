@@ -1,5 +1,7 @@
 import copy
+
 import firedrake as fd
+
 from .functions import FunctionContainer
 from .functions import carst_funcs as f
 from .options import CarstOptions
@@ -74,11 +76,11 @@ class CarstModel():
         return copy.deepcopy(self._options["times"])
 
     def set_condition(self, condition):
+        print(condition)
         self._funcs[f.sed].assign(condition)
         self._funcs[f.sed_old].assign(condition)
-        self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)        
+        self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
         self._out_files.output(self._funcs, self._options)
-
 
     @property
     def output_this_cycle(self):
@@ -98,7 +100,7 @@ class CarstModel():
 
         # Output if necessary
         if self.output_this_cycle:
-            print("At time step: "+str(self._times['current_time']))
+            print("At time step: " + str(self._times['current_time']))
             self._out_files.output(self._funcs, self._options)
 
         self._times["current_time"] += self._times["time_step"]
@@ -106,4 +108,3 @@ class CarstModel():
         # update sea level
         t = self._times["current_time"]
         self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
-        

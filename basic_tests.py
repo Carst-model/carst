@@ -21,7 +21,7 @@ def EXAMPLE_LAND(coordinate_space, function_space):
 
 # Example initial condition
 def EXAMPLE_INITIAL_COND(coordinate_space, function_space):
-    fd.project(
+    return fd.project(
         (20000 * (1 / (2 * fd.sqrt(2 * math.pi * 250 * 250))) * fd.exp(-(
             (coordinate_space[0] - 6000) *
             (coordinate_space[0] - 6000)) / (2 * 250 * 250))) +
