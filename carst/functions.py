@@ -78,6 +78,10 @@ class FunctionContainer(UserDict):
             except KeyError:
                 continue
 
+    def __repr__(self):
+        return str(__class__).split("'")[1] + "(" + ", ".join(
+            self.keys()) + ")"
+
 
 def DIFF_COEFF_PROJECT(funcs: FunctionContainer) -> fd.Function:
     return (((2 / fd.sqrt(2 * math.pi)) *

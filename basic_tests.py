@@ -3,7 +3,7 @@ import copy
 import math
 
 import firedrake as fd
-from carst.options import CarstOptions
+from carst.options import CarstOptions, initialisation_method
 from carst.solver import CarstModel
 
 START_TIME = 0
@@ -33,6 +33,7 @@ def EXAMPLE_INITIAL_COND(coordinate_space, function_space):
 
 # Initialise a solver and add land
 my_options = CarstOptions(
+    initialisation_method.raw_values,
     fd.RectangleMesh(50, 25, 10000, 5000),
     EXAMPLE_LAND,
     fd.Constant(25 * fd.sin(START_TIME / 100000 / 180 * math.pi)),

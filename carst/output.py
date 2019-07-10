@@ -46,3 +46,7 @@ class OutputFilesCollection:
                 *_WANTED_FILES[file_name](funcs, options["land"]),
                 time=options["times"]["current_time"],
             )
+
+    def __repr__(self):
+        return str(__class__).split("'")[1] + "(" + ", ".join(
+            self._out_files.keys()) + ")"

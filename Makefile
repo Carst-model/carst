@@ -17,7 +17,7 @@ all: diamond_default.rng $(DIAMOND_PIP) firedrake
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
-		diamond -s diamond_default.rng; \
+		./firedrake/bin/diamond -s diamond_default.rng; \
 	}
 
 test: firedrake carst basic_tests.py scripts
