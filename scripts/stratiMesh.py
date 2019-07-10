@@ -21,7 +21,7 @@ class stratiMesh:
     Class for creating irregular stratigraphic mesh from Carst outputs.
     """
 
-    def __init__(self, folder=None, xdmfName = 'stratal_series', ncpus=1, layperstep=1, dispTime=None):
+    def __init__(self, folder=None, xdmfName = 'stratal_series', ncpus=1, layperstep=1, dispTime=None, verbose=False):
         """
         Initialization function which takes the folder path to Carst outputs
         and the number of CPUs used to run the simulation.
@@ -482,7 +482,7 @@ class stratiMesh:
                 cellD = np.sum(dtmp[newcells-1], axis=1)/3.
                 cellH = np.sum(htmp[newcells-1], axis=1)/3.
                 oldcells = newcells
-                if l == 0:
+                if l == 1:
                     ctmp = np.copy(celltmp)
                     cellDtmp = np.copy(cellD)
                     cellHtmp = np.copy(cellH)

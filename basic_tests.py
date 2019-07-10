@@ -36,7 +36,7 @@ my_options = CarstOptions(
     initialisation_method.raw_values,
     fd.RectangleMesh(50, 25, 10000, 5000),
     EXAMPLE_LAND,
-    fd.Constant(25 * fd.sin(START_TIME / 100000 / 180 * math.pi)),
+    "25 * fd.sin(t / 50000 * 180 / 3.142)",
     (
         START_TIME,
         TIME_STEP,
@@ -45,6 +45,7 @@ my_options = CarstOptions(
     output_folder=OUTPUT_FOLDER,
     diffusion=True,
     carbonates=False,
+    diff_coeff=1.0,
 )
 my_solver_real_scale = CarstModel(my_options)
 
@@ -57,5 +58,5 @@ my_solver_real_scale.set_condition(
                          my_solver_real_scale.function_space))
 
 # Iterate
-while my_solver_real_scale.times["current_time"] < 20000:
+while my_solver_real_scale.times["current_time"] <= 20000:
     my_solver_real_scale.advance()

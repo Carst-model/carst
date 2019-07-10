@@ -1,6 +1,6 @@
 import copy
-
-from .functions import DIFF_COEFF_PROJECT, FunctionContainer
+import firedrake as fd
+from .functions import FunctionContainer
 from .functions import carst_funcs as f
 from .options import CarstOptions
 from .processes import (DIFFUSION_EQUATION_GENERIC, INIT_INTERPOLATION_ORDER,
@@ -41,15 +41,16 @@ class CarstModel():
         # Initialise function objects
         self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
 
+        # init sea level
+        t = self._times["current_time"]
+        self._funcs[f.sea_level].assign(eval(self._options["sea_level"]))
         # Perform first output and interpolation
-        self._out_files.output(self._funcs, self._options, ("land", ))
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
 
         # Initialise a diffusion equation if it's enabled, project diff_coeff
         if self._options["enabled_steps"]["diffusion"]:
             self._options["diffusion_equation"] = DIFFUSION_EQUATION_GENERIC(
                 self._funcs, self._options)
-            self._funcs[f.diff_coeff].project(DIFF_COEFF_PROJECT(self._funcs))
 
     @property
     def land(self):
@@ -75,6 +76,9 @@ class CarstModel():
     def set_condition(self, condition):
         self._funcs[f.sed].assign(condition)
         self._funcs[f.sed_old].assign(condition)
+        self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)        
+        self._out_files.output(self._funcs, self._options)
+
 
     @property
     def output_this_cycle(self):
@@ -82,7 +86,6 @@ class CarstModel():
 
     def advance(self):
         # Increment time
-        self._times["current_time"] += self._times["time_step"]
 
         # Advance diffusion
         if self._options["enabled_steps"].get("diffusion"):
@@ -95,4 +98,12 @@ class CarstModel():
 
         # Output if necessary
         if self.output_this_cycle:
+            print("At time step: "+str(self._times['current_time']))
             self._out_files.output(self._funcs, self._options)
+
+        self._times["current_time"] += self._times["time_step"]
+
+        # update sea level
+        t = self._times["current_time"]
+        self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
+        

@@ -12,14 +12,14 @@ def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
     return (fd.inner(
         (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
         options["test_function"],
-    ) + funcs[f.limiter] * funcs[f.diff_coeff] *
+    ) + funcs[f.limiter] * options['diff_coeff'] * #funcs[f.diff_coeff] *
             fd.inner(fd.grad(funcs[f.sed] + options["land"]),
                      fd.grad(options["test_function"]))) * fd.dx
 
 
 # Set interpolation order constants
 INIT_INTERPOLATION_ORDER = (
-    f.sea_level,
+    #f.sea_level,
     f.surface,
     f.thickness,
     f.limiter,
@@ -53,13 +53,12 @@ PROCESSOR_NEEDED_FUNCS = {
 
 
 def advance_diffusion(funcs: FunctionContainer, options):
-    # "Copy" the sed function and solve
     fd.solve(
-        options["diffusion_equation"] == 0,
-        funcs[f.sed],
+        options['diffusion_equation'] == 0,
+        funcs[f.sed]
     )
+    funcs[f.sed_old].assign(funcs[f.sed])
     funcs.interpolate(options, *INTERPOLATION_ORDER)
-    funcs[f.sed_old] = funcs[f.sed]
 
 
 def advance_carbonates(funcs: FunctionContainer, options) -> fd.Function:

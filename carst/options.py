@@ -30,19 +30,17 @@ class CarstOptions(UserDict):
             schema_tree = etree.ElementTree(kw_args.get("schema_file"))
 
     def raw_values(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
-                   sea_level_constant: fd.Constant,
-                   times: Tuple[float, float, float], output_folder,
-                   **kw_args: dict) -> dict:
+                   sea_level: fd.Constant, times: Tuple[float, float, float],
+                   output_folder, **kw_args: dict) -> dict:
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
-        if not isinstance(sea_level_constant, fd.Constant):
-            raise TypeError(
-                "sea_level_constant not of type firedrake.Constant")
+        if not isinstance(sea_level, str):
+            raise TypeError("sea_level not of type str")
 
         vals = dict()
 
         # Store the passed values
-        vals["sea_level_constant"] = sea_level_constant
+        vals["sea_level"] = sea_level
         vals["times"] = dict(
             zip(("current_time", "time_step", "output_time"), times))
         vals["mesh"] = base_mesh
@@ -76,4 +74,5 @@ class CarstOptions(UserDict):
         # Initialise out_files
         vals["out_files"] = OutputFilesCollection(output_folder,
                                                   vals["enabled_steps"])
+        vals["diff_coeff"] = float(kw_args.get('diff_coeff'))
         return vals
