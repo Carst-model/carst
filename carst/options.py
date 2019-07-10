@@ -57,4 +57,7 @@ class CarstOptions(UserDict):
         vals["out_files"] = OutputFilesCollection(output_folder,
                                                   vals["enabled_steps"])
 
+        # diffusion process
+        vals["diff_coeff"] = float(kw_args.get('diff_coeff'))
+
         super().__init__(vals)

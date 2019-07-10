@@ -34,8 +34,8 @@ class FunctionContainer(UserDict):
         lambda funcs, options: (funcs[carst_funcs.sea_level] - funcs[
             carst_funcs.surface]),
         carst_funcs.diff_coeff:
-        lambda funcs, options: (2. / fd.sqrt(2. * math.pi) * fd.exp(-0.5 * funcs[
-            carst_funcs.depth]**2)),
+        lambda funcs, options: (options["diff_coeff"] * ((2. / fd.sqrt(2. * math.pi)) * fd.exp(-0.5 * ((funcs[
+            carst_funcs.depth]-5.0)/10.0)**2))),
         carst_funcs.sea_level:
         lambda funcs, options: options["sea_level_constant"],
     }
@@ -77,6 +77,4 @@ class FunctionContainer(UserDict):
                 continue
 
 
-def DIFF_COEFF_PROJECT(funcs: FunctionContainer) -> fd.Function:
-    return (((2 / fd.sqrt(2 * math.pi)) *
-             fd.exp(-0.5 * funcs[carst_funcs.depth]**2)) + 0.2022)
+
