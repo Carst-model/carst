@@ -29,7 +29,9 @@ class CarstModel():
     def __init__(self, options: CarstOptions):
         # Type Checking
         if not isinstance(options, CarstOptions):
-            raise TypeError("Arg to CarstModel must be of type CarstOptions")
+            raise TypeError(
+                f"options must be of type CarstOptions, not {str(type(options))}"
+            )
 
         # Get values from options
         self._options = options
@@ -37,7 +39,7 @@ class CarstModel():
         self._out_files = self._options["out_files"]
 
         # Initialise function objects
-        self._funcs = FunctionContainer(self, options["wanted_funcs"])
+        self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
 
         # init sea level
         t = self._times["current_time"]
@@ -83,7 +85,6 @@ class CarstModel():
         return self._times["current_time"] % self._times["output_time"] == 0
 
     def advance(self):
-        # Increment time
 
         # Advance diffusion
         if self._options["enabled_steps"].get("diffusion"):
@@ -91,8 +92,10 @@ class CarstModel():
 
         # Advance carbonates
         if self._options["enabled_steps"].get("carbonates"):
-            self._funcs[f.sed] = self._funcs[f.sed] + advance_carbonates(
-                self._funcs, self._options)
+            advance_carbonates(self._funcs, self._options)
+            self._funcs[f.sed] += self._options['carbonate_production'] * self._funcs[f.light_attenuation]
+
+        self._funcs[f.sed_old].assign(self._funcs[f.sed])
 
         # Output if necessary
         if self.output_this_cycle:

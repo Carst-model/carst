@@ -57,10 +57,9 @@ def advance_diffusion(funcs: FunctionContainer, options):
         options['diffusion_equation'] == 0,
         funcs[f.sed]
     )
-    funcs[f.sed_old].assign(funcs[f.sed])
     funcs.interpolate(options, *INTERPOLATION_ORDER)
 
 
 def advance_carbonates(funcs: FunctionContainer, options) -> fd.Function:
-    funcs.interpolate(options, (f.light_attenuation, ))
-    return options["carbonate_production"] * funcs[f.light_attenuation]
+    funcs.interpolate(options, f.light_attenuation)
+    return 
