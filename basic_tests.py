@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import copy
 import math
+import random
 
 import firedrake as fd
 from carst.options import CarstOptions, initialisation_method
@@ -14,7 +15,7 @@ OUTPUT_FOLDER = "output"
 
 # Example land function generator
 def EXAMPLE_LAND(coordinate_space, function_space):
-    return fd.project(100 * fd.tanh(0.0005 * (coordinate_space[0] - 6000)),
+    return fd.project(100 * fd.tanh(0.0005 * (coordinate_space[0] - 6000) + random.randint(0,10)/10. ),
                       function_space,
                       name="starting_topo")
 
@@ -34,7 +35,7 @@ def EXAMPLE_INITIAL_COND(coordinate_space, function_space):
 # Initialise a solver and add land
 my_options = CarstOptions(
     initialisation_method.raw_values,
-    fd.RectangleMesh(50, 25, 10000, 5000),
+    fd.RectangleMesh(200, 200, 10000, 10000),
     EXAMPLE_LAND,
     "25 * fd.sin(t / 50000 * 180 / 3.142)",
     (
@@ -45,8 +46,8 @@ my_options = CarstOptions(
     output_folder=OUTPUT_FOLDER,
     diffusion=True,
     carbonates=True,
-    diff_coeff=1.0,
-    carbonate_production = 4.0,
+    diff_coeff=5.0,
+    carbonate_production = 3.0,
 )
 my_solver_real_scale = CarstModel(my_options)
 
