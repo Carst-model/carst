@@ -7,10 +7,10 @@ start =
         element Mesh-Values {
             ## Number of cells and extent in the x-direction.
             ## Space-seperated.
-            element X-Parameters { integer_dim_vector },
+            element X-Parameters { integer_dim_vector { dim = "2" } },
             ## Number of cells and extent in the y-direction.
             ## Space-seperated.
-            element Y-Parameters { integer_dim_vector }
+            element Y-Parameters { integer_dim_vector { dim = "2"} }
         },
         ## Please consider that all times are in years(?)
         element Times {
