@@ -1,18 +1,15 @@
 include "spud_base.rnc"
 
 start =
-    (
-        ## Please fill all fields!
-        element Carst-Options {
-            ## The time for the model to start
-            times,
-            ## The folder to write the output files to
-            element Output-Directory { anystring }
-        }
-    )
-
-times =
-    (
+    element Carst-Options {
+        ## The values used in initialising the mesh object
+        ## on which all our functions are defined
+        element Mesh-Values {
+            ## Number of cells and extent in the x-direction
+            element X-Parameters { integer_dim_vector },
+            ## Number of cells and extent in the y-direction
+            element Y-Parameters { integer_dim_vector }
+        },
         ## Please consider that all times are in years(?)
         element Times {
             ## The time for the model to start simulating from
@@ -23,5 +20,27 @@ times =
             element Output-Time { real },
             ## The time to stop simulating
             element End-Time { real }
-        }
-    )
+        },
+        ## The folder to write the output files to
+        element Output-Directory { anystring },
+        ## The mathematical function defining the sea bed.
+        ## Defined in terms of coord-space (x) and function
+        ## space (f).
+        element Land-Function { anystring },
+        ## The mathematical function defining the initial state
+        ## of the sediment.
+        ## Defined in terms of coord-space (x) and function
+        ## space (f).
+        element Initial-Condition { anystring },
+        ## The mathematical function defining the sea level constant.
+        element Sea-Level-Constant { anystring },
+        ## Which steps of the simulation to enable
+        element Enabled-Steps {
+            element Diffusion { python_bool },
+            element Carbonates { python_bool }
+        },
+        ## The value of the diffusion coefficient.
+        element Diff-Coefficient { real }?
+    }
+
+python_bool = "True"|"False"
