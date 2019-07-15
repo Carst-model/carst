@@ -3,15 +3,31 @@
   <include href="spud_base.rng"/>
   <start>
     <element name="Carst-Options">
+      <element name="geometry">
+        <a:documentation>Geometry-related options.</a:documentation>
+        <element name="dimension">
+          <a:documentation>The dimension of the problem.
+&lt;b&gt;This can only be set once.&lt;/b&gt;
+Should be 2</a:documentation>
+          <element name="integer_value">
+            <attribute name="rank">
+              <value>0</value>
+            </attribute>
+            <value>2</value>
+          </element>
+        </element>
+      </element>
       <element name="Mesh-Values">
         <a:documentation>The values used in initialising the mesh object
 on which all our functions are defined</a:documentation>
         <element name="X-Parameters">
-          <a:documentation>Number of cells and extent in the x-direction</a:documentation>
+          <a:documentation>Number of cells and extent in the x-direction.
+Space-seperated.</a:documentation>
           <ref name="integer_dim_vector"/>
         </element>
         <element name="Y-Parameters">
-          <a:documentation>Number of cells and extent in the y-direction</a:documentation>
+          <a:documentation>Number of cells and extent in the y-direction.
+Space-seperated.</a:documentation>
           <ref name="integer_dim_vector"/>
         </element>
       </element>

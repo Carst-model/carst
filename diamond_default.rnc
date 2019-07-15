@@ -2,15 +2,30 @@ include "spud_base.rnc"
 
 start =
     element Carst-Options {
+         ## Geometry-related options.
+         element geometry 
+         {
+            ## The dimension of the problem.
+            ## <b>This can only be set once.</b>
+            ## Should be 2
+            element dimension
+            {
+               element integer_value 
+               {
+                  attribute rank { "0" },
+                  ("2")
+               }
+            }
+        },
         ## The values used in initialising the mesh object
         ## on which all our functions are defined
         element Mesh-Values {
             ## Number of cells and extent in the x-direction.
             ## Space-seperated.
-            element X-Parameters { integer_dim_vector { dim = "2" } },
+            element X-Parameters { integer_dim_vector },
             ## Number of cells and extent in the y-direction.
             ## Space-seperated.
-            element Y-Parameters { integer_dim_vector { dim = "2"} }
+            element Y-Parameters { integer_dim_vector }
         },
         ## Please consider that all times are in years(?)
         element Times {
