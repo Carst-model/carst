@@ -3,14 +3,14 @@ include "spud_base.rnc"
 start =
     element Carst-Options {
          ## Geometry-related options.
-         element geometry 
+         element geometry
          {
             ## The dimension of the problem.
             ## <b>This can only be set once.</b>
             ## Should be 2
             element dimension
             {
-               element integer_value 
+               element integer_value
                {
                   attribute rank { "0" },
                   ("2")
