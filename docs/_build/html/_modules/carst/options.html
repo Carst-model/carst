@@ -1,0 +1,269 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>carst.options &#8212; Carst Model  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for carst.options</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">UserDict</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="k">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">chain</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">xml.etree</span> <span class="k">import</span> <span class="n">ElementTree</span>
+
+<span class="kn">import</span> <span class="nn">firedrake</span> <span class="k">as</span> <span class="nn">fd</span>
+
+<span class="kn">from</span> <span class="nn">.output</span> <span class="k">import</span> <span class="n">OutputFilesCollection</span>
+<span class="kn">from</span> <span class="nn">.processes</span> <span class="k">import</span> <span class="n">PROCESSOR_NEEDED_FUNCS</span>
+
+
+<span class="k">def</span> <span class="nf">_process_string_lit</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">replacements</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">target</span>
+    <span class="k">for</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">replacements</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;fd.project(&quot;</span> <span class="o">+</span> <span class="n">result</span> <span class="o">+</span> <span class="s2">&quot;, self[&#39;function_space&#39;])&quot;</span>
+
+
+<div class="viewcode-block" id="initialisation_method"><a class="viewcode-back" href="../../carst.html#carst.options.initialisation_method">[docs]</a><span class="k">class</span> <span class="nc">initialisation_method</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enum for specifying to carst.options.CarstOptions where you want the initialisation data to come from.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw_values</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">diamond_default</span> <span class="o">=</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="CarstOptions"><a class="viewcode-back" href="../../carst.html#carst.options.CarstOptions">[docs]</a><span class="k">class</span> <span class="nc">CarstOptions</span><span class="p">(</span><span class="n">UserDict</span><span class="p">):</span>
+    <span class="n">_STRING_LIT_REPLACEMENTS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;tanh&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.tanh&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.sqrt&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;exp&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.exp&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;sin&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.sin&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="s2">&quot;self[&#39;coordinate_space&#39;][0]&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;F&quot;</span><span class="p">,</span> <span class="s2">&quot;self[&#39;function_space&#39;]&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;pi&quot;</span><span class="p">,</span> <span class="s2">&quot;math.pi&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Dispatch</span>
+<div class="viewcode-block" id="CarstOptions.__init__"><a class="viewcode-back" href="../../carst.html#carst.options.CarstOptions.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_type</span><span class="p">:</span> <span class="n">initialisation_method</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialise the carst.options.CarstOptions module.</span>
+
+<span class="sd">        If ini_type is carst.options.initialisation_method.raw_values, args should contain:</span>
+
+<span class="sd">        * The base mesh on which the model will operate, of type firedrake.mesh.MeshGeometry.</span>
+
+<span class="sd">        :param carst.options.initialisation_method ini_type: The method to use for gathering data.</span>
+<span class="sd">        :param Iterable args: Only used if if ini_type is carst.options.initialisation_method.raw_values.</span>
+<span class="sd">        :returns: The processed carst.options.CarstModel instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ini_type</span>
+        <span class="k">if</span> <span class="n">ini_type</span> <span class="o">==</span> <span class="n">initialisation_method</span><span class="o">.</span><span class="n">raw_values</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_raw_values</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ini_type</span> <span class="o">==</span> <span class="n">initialisation_method</span><span class="o">.</span><span class="n">diamond_default</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_diamond_default</span><span class="p">(</span><span class="n">kw_args</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="nf">_diamond_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;diamond_input.xml&quot;</span><span class="p">):</span>
+        <span class="n">tree_root</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">ElementTree</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">sea_level_lit</span> <span class="o">=</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">for</span> <span class="n">original</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">CarstOptions</span><span class="o">.</span><span class="n">_STRING_LIT_REPLACEMENTS</span><span class="p">:</span>
+            <span class="n">sea_level_lit</span> <span class="o">=</span> <span class="n">sea_level_lit</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replacement</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;sea_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sea_level_lit</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;self._times[&#39;current_time&#39;]&quot;</span><span class="p">)</span>
+
+        <span class="n">make_int</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">num</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+        <span class="n">mesh_args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">make_int</span><span class="p">,</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span>
+                <span class="nb">map</span><span class="p">(</span><span class="n">make_int</span><span class="p">,</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">))))</span>
+        <span class="n">mesh_args</span> <span class="o">=</span> <span class="n">mesh_args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">mesh_args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">RectangleMesh</span><span class="p">(</span><span class="o">*</span><span class="n">mesh_args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;coordinate_space&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">SpatialCoordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">FunctionSpace</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">],</span> <span class="s2">&quot;CG&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;test_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">TestFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;times&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">((</span><span class="s2">&quot;current_time&quot;</span><span class="p">,</span> <span class="s2">&quot;time_step&quot;</span><span class="p">,</span> <span class="s2">&quot;output_time&quot;</span><span class="p">,</span> <span class="s2">&quot;end_time&quot;</span><span class="p">),</span>
+                <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">step</span><span class="o">.</span><span class="n">tag</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">step</span><span class="o">.</span><span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;True&quot;</span>
+            <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">])</span>
+        <span class="c1"># Locate diff_coeff in optional parts of the tree</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="s2">&quot;diffusion&quot;</span><span class="p">]:</span>
+            <span class="n">diff_coeff_not_present</span> <span class="o">=</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;Diffusion enabled but no coefficient provided!&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Diff-Coefficient&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;diff_coeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">tree_root</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;Diff-Coefficient&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;diff_coeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">diff_coeff_not_present</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">diff_coeff_not_present</span>
+        <span class="c1"># Initialise the funcs we need</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="s2">&quot;basic&quot;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">process</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="n">process</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="n">process</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Evaluate the literals for the initial_condition and land</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span>
+            <span class="n">_process_string_lit</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                                <span class="n">CarstOptions</span><span class="o">.</span><span class="n">_STRING_LIT_REPLACEMENTS</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span>
+            <span class="n">_process_string_lit</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                                <span class="n">CarstOptions</span><span class="o">.</span><span class="n">_STRING_LIT_REPLACEMENTS</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_raw_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_mesh</span><span class="p">,</span> <span class="n">land</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">sea_level</span><span class="p">,</span>
+                    <span class="n">times</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">output_folder</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kw_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">base_mesh</span><span class="p">,</span> <span class="n">fd</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">MeshGeometry</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;base_mesh not of type firedrake.Mesh&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sea_level</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;sea_level not of type str&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Store the passed values</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;sea_level&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sea_level</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span>
+                                              <span class="s2">&quot;self._times[&#39;current_time&#39;]&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;times&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">((</span><span class="s2">&quot;current_time&quot;</span><span class="p">,</span> <span class="s2">&quot;time_step&quot;</span><span class="p">,</span> <span class="s2">&quot;output_time&quot;</span><span class="p">),</span> <span class="n">times</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_mesh</span>
+
+        <span class="c1"># Mark the steps in the process we want</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;diffusion&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diffusion&quot;</span><span class="p">)),</span>
+            <span class="s2">&quot;carbonates&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;carbonates&quot;</span><span class="p">)),</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;carbonate_production&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;carbonate_production&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="s2">&quot;carbonates&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;carbonate_production&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                    <span class="s2">&quot;If carbonate modelling is enabled, a value for the carbonate production rate is required&quot;</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Generate our workspace from the mesh</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;coordinate_space&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">SpatialCoordinate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">FunctionSpace</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">],</span> <span class="s2">&quot;CG&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;test_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">TestFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Get our land, based in our workspace</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">land</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s2">&quot;coordinate_space&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Initialise the funcs we need</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="s2">&quot;basic&quot;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">process</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="n">process</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="n">process</span><span class="p">])</span>
+
+        <span class="c1"># Initialise out_files</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;diff_coeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;diff_coeff&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kw_args</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">]</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo_stnd.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">Carst Model</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../carst.html">carst package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, University of York.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

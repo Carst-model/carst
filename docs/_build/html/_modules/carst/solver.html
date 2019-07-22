@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>carst.solver &#8212; Carst Model  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for carst.solver</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">firedrake</span> <span class="k">as</span> <span class="nn">fd</span>
+
+<span class="kn">from</span> <span class="nn">.functions</span> <span class="k">import</span> <span class="n">FunctionContainer</span>
+<span class="kn">from</span> <span class="nn">.functions</span> <span class="k">import</span> <span class="n">carst_funcs</span> <span class="k">as</span> <span class="n">f</span>
+<span class="kn">from</span> <span class="nn">.options</span> <span class="k">import</span> <span class="n">CarstOptions</span>
+<span class="kn">from</span> <span class="nn">.processes</span> <span class="k">import</span> <span class="p">(</span><span class="n">DIFFUSION_EQUATION_GENERIC</span><span class="p">,</span> <span class="n">INIT_INTERPOLATION_ORDER</span><span class="p">,</span>
+                        <span class="n">advance_carbonates</span><span class="p">,</span> <span class="n">advance_diffusion</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CarstModel"><a class="viewcode-back" href="../../carst.html#carst.solver.CarstModel">[docs]</a><span class="k">class</span> <span class="nc">CarstModel</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Simulates sediment formation on the seabed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_WANTED_FILES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;land&quot;</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="p">(</span><span class="n">solver</span><span class="o">.</span><span class="n">land</span><span class="p">),</span>
+        <span class="s2">&quot;layer_data&quot;</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">diff_coeff</span><span class="p">],</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">thickness</span><span class="p">],</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">depth</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;surfaces&quot;</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">surface</span><span class="p">],</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sed</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="s2">&quot;sea_level&quot;</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="p">(</span><span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sea_level</span><span class="p">]),</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="CarstModel.__init__"><a class="viewcode-back" href="../../carst.html#carst.solver.CarstModel.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">CarstOptions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialise CarstModel instance.</span>
+
+<span class="sd">        :param carst.options.CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.</span>
+<span class="sd">        :raise: TypeError if options is not of type CarstOptions.</span>
+<span class="sd">        :return: The initialised CarstModel instance.</span>
+<span class="sd">        :rtype: carst.solver.CarstModel</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Type Checking</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">CarstOptions</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;options must be of type CarstOptions, not {str(type(options))}&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Get values from options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;times&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Initialise function objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span> <span class="o">=</span> <span class="n">FunctionContainer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">])</span>
+
+        <span class="c1"># init sea level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sea_level</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;sea_level&quot;</span><span class="p">]))</span>
+        <span class="c1"># Perform first output and interpolation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="o">*</span><span class="n">INIT_INTERPOLATION_ORDER</span><span class="p">)</span>
+
+        <span class="c1"># Initialise a diffusion equation if it&#39;s enabled, project diff_coeff</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="s2">&quot;diffusion&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;diffusion_equation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DIFFUSION_EQUATION_GENERIC</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">])</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">land</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;:returns: The firedrake object containing the land function.</span>
+<span class="sd">        :rtype: firedrake.function.Function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Possibly change me to return by value/representation, not reference</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">funcs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FunctionContainer</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;:returns: The FunctionContainer object which holds the current status of all the mathematical functions the model is using.</span>
+<span class="sd">        :rtype: carst.functions.FunctionContainer</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">coordinate_space</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;:returns: The firedrake object describing the coordinate space the model is operating in.</span>
+<span class="sd">        :rtype: firedrake.ufl.geometry.SpacialCoordinate</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;coordinate_space&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">function_space</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;:returns: The firedrake object describing the function space the model is operating in.</span>
+<span class="sd">        :rtype: firedrake.functionspaceimpl.WithGeometry</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">times</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;:returns: A dict containing all the time variables the model is using.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;times&quot;</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_this_cycle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;:returns: True if model will write to output files this cycle.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_times</span><span class="p">[</span><span class="s2">&quot;current_time&quot;</span><span class="p">]</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_times</span><span class="p">[</span><span class="s2">&quot;output_time&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="CarstModel.set_condition"><a class="viewcode-back" href="../../carst.html#carst.solver.CarstModel.set_condition">[docs]</a>    <span class="k">def</span> <span class="nf">set_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">condition</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the function describing the status of the sediment.</span>
+
+<span class="sd">        :param firedrake.function.Function condition: the function to set the sediment to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sed</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sed_old</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="o">*</span><span class="n">INIT_INTERPOLATION_ORDER</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CarstModel.advance"><a class="viewcode-back" href="../../carst.html#carst.solver.CarstModel.advance">[docs]</a>    <span class="k">def</span> <span class="nf">advance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Advance the simulation by a single time step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Increment time</span>
+
+        <span class="c1"># Advance diffusion</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diffusion&quot;</span><span class="p">):</span>
+            <span class="n">advance_diffusion</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+        <span class="c1"># Advance carbonates</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;carbonates&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sed</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sed</span><span class="p">]</span> <span class="o">+</span> <span class="n">advance_carbonates</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+        <span class="c1"># Output if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_this_cycle</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;At time step: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_times</span><span class="p">[</span><span class="s1">&#39;current_time&#39;</span><span class="p">]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_times</span><span class="p">[</span><span class="s2">&quot;current_time&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_times</span><span class="p">[</span><span class="s2">&quot;time_step&quot;</span><span class="p">]</span>
+
+        <span class="c1"># update sea level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sea_level</span><span class="p">]</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s1">&#39;sea_level&#39;</span><span class="p">]))</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo_stnd.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">Carst Model</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../carst.html">carst package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, University of York.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

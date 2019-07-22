@@ -1,5 +1,7 @@
 **/__pycache__
 **/.mypy_cache
 **/output
-docs/_*
+docs/_static
+docs/_templates
+docs/_build/doctrees
 firedrake*
