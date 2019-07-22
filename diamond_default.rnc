@@ -41,13 +41,13 @@ start =
         ## The folder to write the output files to
         element Output-Directory { anystring },
         ## The mathematical function defining the sea bed.
-        ## Defined in terms of coord-space (x) and function
-        ## space (f).
+        ## Defined in terms of coord-space (X) and function
+        ## space (F).
         element Land-Function { anystring },
         ## The mathematical function defining the initial state
         ## of the sediment.
-        ## Defined in terms of coord-space (x) and function
-        ## space (f).
+        ## Defined in terms of coord-space (X) and function
+        ## space (F).
         element Initial-Condition { anystring },
         ## The mathematical function defining the sea level constant.
         element Sea-Level-Constant { anystring },
@@ -56,7 +56,7 @@ start =
             element Diffusion { python_bool },
             element Carbonates { python_bool }
         },
-        ## The value of the diffusion coefficient.
+        ## The value of the diffusion coefficient. Required if diffusion is enabled.
         element Diff-Coefficient { real }?
     }
 

@@ -1,4 +1,5 @@
 import copy
+import math
 
 import firedrake as fd
 
@@ -44,7 +45,6 @@ class CarstModel():
         self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
 
         # init sea level
-        t = self._times["current_time"]
         self._funcs[f.sea_level].assign(eval(self._options["sea_level"]))
         # Perform first output and interpolation
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
@@ -53,6 +53,9 @@ class CarstModel():
         if self._options["enabled_steps"]["diffusion"]:
             self._options["diffusion_equation"] = DIFFUSION_EQUATION_GENERIC(
                 self._funcs, self._options)
+
+        if self._options.get("initial_condition") is not None:
+            self.set_condition(self._options["initial_condition"])
 
     @property
     def land(self):
@@ -76,7 +79,6 @@ class CarstModel():
         return copy.deepcopy(self._options["times"])
 
     def set_condition(self, condition):
-        print(condition)
         self._funcs[f.sed].assign(condition)
         self._funcs[f.sed_old].assign(condition)
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)

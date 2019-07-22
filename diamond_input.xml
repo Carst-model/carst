@@ -31,16 +31,19 @@
     <string_value lines="1">output</string_value>
   </Output-Directory>
   <Land-Function>
-    <string_value lines="1">100 * tanh(0.0005 * (x - 6000))</string_value>
+    <string_value lines="1">100 * tanh(0.0005 * (X - 6000))</string_value>
   </Land-Function>
   <Initial-Condition>
-    <string_value lines="1">(20000 * (1 / (2 * sqrt(2 * pi * 250 * 250))) * exp(-1  * ((x - 6000) * (x - 6000)) / (2 * 250 * 250))) + (50000 * (1 / (2 * sqrt(2 * pi * 1000 * 1000))) * exp(-1 * ((x - 4000) * (x - 4000)) / (2 * 1000 * 1000)))</string_value>
+    <string_value lines="1">(20000 * (1 / (2 * sqrt(2 * pi * 250 * 250))) * exp(-1  * ((X - 6000) * (X - 6000)) / (2 * 250 * 250))) + (50000 * (1 / (2 * sqrt(2 * pi * 1000 * 1000))) * exp(-1 * ((X - 4000) * (X - 4000)) / (2 * 1000 * 1000)))</string_value>
   </Initial-Condition>
   <Sea-Level-Constant>
-    <string_value lines="1">25 * sin(t / 50000 * 180 / pi)</string_value>
+    <string_value lines="1">25 * sin(T / 50000 * 180 / pi)</string_value>
   </Sea-Level-Constant>
   <Enabled-Steps>
     <Diffusion>True</Diffusion>
     <Carbonates>False</Carbonates>
   </Enabled-Steps>
+  <Diff-Coefficient>
+    <real_value rank="0">1.0</real_value>
+  </Diff-Coefficient>
 </Carst-Options>

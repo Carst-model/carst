@@ -12,6 +12,13 @@ from .output import OutputFilesCollection
 from .processes import PROCESSOR_NEEDED_FUNCS
 
 
+def process_string_lit(target, replacements):
+    result = target
+    for original, replacement in replacements:
+        result = result.replace(original, replacement)
+    return "fd.project(" + result + ", self['function_space'])"
+
+
 class initialisation_method(Enum):
     raw_values = 1
     diamond_default = 2
@@ -22,7 +29,9 @@ class CarstOptions(UserDict):
         ("tanh", "fd.tanh"),
         ("sqrt", "fd.sqrt"),
         ("exp", "fd.exp"),
-        ("x", "self['coordinate_space'][0]"),
+        ("sin", "fd.sin"),
+        ("X", "self['coordinate_space'][0]"),
+        ("F", "self['function_space']"),
         ("pi", "math.pi"),
     )
 
@@ -39,14 +48,23 @@ class CarstOptions(UserDict):
         elif ini_type == initialisation_method.diamond_default:
             self._diamond_default(kw_args["file"])
 
-    def _diamond_default(self, file_name):
-        tree_root = ElementTree.ElementTree(file="diamond_input.xml").getroot()
+    def _diamond_default(self, file_name="diamond_input.xml"):
+        tree_root = ElementTree.ElementTree(file=file_name).getroot()
         del tree_root[0]
 
-        self["sea_level"] = tree_root[5][0].text
-        self["mesh"] = fd.RectangleMesh(*chain(
-            zip([int(num) for num in tree_root[0][0][0].text.split(" ")],
-                [int(num) for num in tree_root[0][1][0].text.split(" ")])))
+        sea_level_lit = tree_root[5][0].text
+        for original, replacement in CarstOptions._STRING_LIT_REPLACEMENTS:
+            sea_level_lit = sea_level_lit.replace(original, replacement)
+        self["sea_level"] = sea_level_lit.replace(
+            "T", "self._times['current_time']")
+
+        make_int = lambda num: int(num)
+        mesh_args = list(
+            zip(map(make_int, tree_root[0][0][0].text.split(" ")),
+                map(make_int, tree_root[0][1][0].text.split(" "))))
+        mesh_args = mesh_args[0] + mesh_args[1]
+        self["mesh"] = fd.RectangleMesh(*mesh_args)
+        self["coordinate_space"] = fd.SpatialCoordinate(self["mesh"])
         self["function_space"] = fd.FunctionSpace(self["mesh"], "CG", 1)
         self["test_function"] = fd.TestFunction(self["function_space"])
 
@@ -54,20 +72,40 @@ class CarstOptions(UserDict):
             zip(("current_time", "time_step", "output_time"),
                 [int(time[0].text) for time in tree_root[1]]))
 
-        # Enabled-Steps must always be the last element of the xml tree
         self["enabled_steps"] = {
-            step.tag.lower(): bool(step.text)
-            for step in tree_root[-1]
+            step.tag.lower(): step.text == "True"
+            for step in tree_root[6]
         }
+        print(self["enabled_steps"])
+        # Locate diff_coeff in optional parts of the tree
+        if self["enabled_steps"]["diffusion"]:
+            diff_coeff_not_present = AttributeError(
+                "Diffusion enabled but no coefficient provided!")
+            try:
+                if tree_root[7].tag == "Diff-Coefficient":
+                    self["diff_coeff"] = float(tree_root[7][0].text)
+                elif tree_root[8].tag == "Diff-Coefficient":
+                    self["diff_coeff"] = float(tree_root[8][0].text)
+                else:
+                    raise diff_coeff_not_present
+            except IndexError:
+                raise diff_coeff_not_present
+        # Initialise the funcs we need
+        self["wanted_funcs"] = list(PROCESSOR_NEEDED_FUNCS["basic"])
+        for process in self["enabled_steps"]:
+            if self["enabled_steps"][process]:
+                self["wanted_funcs"].extend(PROCESSOR_NEEDED_FUNCS[process])
 
         self["out_files"] = OutputFilesCollection(tree_root[2][0].text,
                                                   self["enabled_steps"])
 
-        land_func = tree_root[6][0].text
-        for original, replacement in CarstOptions._STRING_LIT_REPLACEMENTS:
-            land_func = land_func.replace(original, replacement)
-        land_func = "fd.project(" + land_func + ")"
-        self["land"] = eval(land_func)
+        # Evaluate the literals for the initial_condition and land
+        self["land"] = eval(
+            process_string_lit(tree_root[3][0].text,
+                               CarstOptions._STRING_LIT_REPLACEMENTS))
+        self["initial_condition"] = eval(
+            process_string_lit(tree_root[4][0].text,
+                               CarstOptions._STRING_LIT_REPLACEMENTS))
 
     def _raw_values(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
                     sea_level: fd.Constant, times: Tuple[float, float, float],
@@ -77,10 +115,9 @@ class CarstOptions(UserDict):
         if not isinstance(sea_level, str):
             raise TypeError("sea_level not of type str")
 
-        self = dict()
-
         # Store the passed values
-        self["sea_level"] = sea_level
+        self["sea_level"] = sea_level.replace("T",
+                                              "self._times['current_time']")
         self["times"] = dict(
             zip(("current_time", "time_step", "output_time"), times))
         self["mesh"] = base_mesh
@@ -115,3 +152,6 @@ class CarstOptions(UserDict):
         self["out_files"] = OutputFilesCollection(output_folder,
                                                   self["enabled_steps"])
         self["diff_coeff"] = float(kw_args.get('diff_coeff'))
+
+        if kw_args.get("initial_condition") is not None:
+            self["initial_condition"] = kw_args["initial_condition"]

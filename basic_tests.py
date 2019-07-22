@@ -36,7 +36,7 @@ my_options = CarstOptions(
     initialisation_method.raw_values,
     fd.RectangleMesh(50, 25, 10000, 5000),
     EXAMPLE_LAND,
-    "25 * fd.sin(t / 50000 * 180 / 3.142)",
+    "25 * fd.sin(T / 50000 * 180 / math.pi)",
     (
         START_TIME,
         TIME_STEP,
