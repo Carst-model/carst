@@ -69,7 +69,7 @@ class CarstOptions(UserDict):
         self["test_function"] = fd.TestFunction(self["function_space"])
 
         self["times"] = dict(
-            zip(("current_time", "time_step", "output_time"),
+            zip(("current_time", "time_step", "output_time", "end_time"),
                 [int(time[0].text) for time in tree_root[1]]))
 
         self["enabled_steps"] = {
