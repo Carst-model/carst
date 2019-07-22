@@ -11,6 +11,8 @@ from .processes import (DIFFUSION_EQUATION_GENERIC, INIT_INTERPOLATION_ORDER,
 
 
 class CarstModel():
+    """Simulates sediment formation on the seabed.
+    """
     _WANTED_FILES = {
         "land":
         lambda solver: (solver.land),
@@ -30,6 +32,13 @@ class CarstModel():
     }
 
     def __init__(self, options: CarstOptions):
+        """Initialise CarstModel instance.
+
+        :param CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.
+        :raise: TypeError if options is not of type CarstOptions.
+        :return: The initialised CarstModel instance.
+        :rtype: carst.solver.CarstModel
+        """
         # Type Checking
         if not isinstance(options, CarstOptions):
             raise TypeError(
@@ -58,27 +67,46 @@ class CarstModel():
             self.set_condition(self._options["initial_condition"])
 
     @property
-    def land(self):
+    def land(self) -> fd.function.Function:
+        """:returns: The firedrake object containing the land function.
+        :rtype: firedrake.function.Function
+        """
         return self._options["land"]
 
     # Possibly change me to return by value/representation, not reference
     @property
     def funcs(self) -> FunctionContainer:
+        """:returns: The FunctionContainer object which holds the current status of all the mathematical functions the model is using.
+        :rtype: carst.functions.FunctionContainer
+        """
         return self._funcs
 
     @property
     def coordinate_space(self):
+        """:returns: The firedrake object describing the coordinate space the model is operating in.
+        :rtype: firedrake.ufl.geometry.SpacialCoordinate
+        """
         return self._options["coordinate_space"]
 
     @property
-    def function_space(self):
+    def function_space(self) -> fd.functionspaceimpl.WithGeometry:
+        """:returns: The firedrake object describing the function space the model is operating in.
+        :rtype: firedrake.functionspaceimpl.WithGeometry
+        """
         return self._options["function_space"]
 
     @property
     def times(self) -> dict:
+        """:returns: A dict containing all the time variables the model is using.
+        :rtype: dict
+        """
         return copy.deepcopy(self._options["times"])
 
     def set_condition(self, condition):
+        """Set the function describing the status of the sediment.
+
+        :param firedrake.function.Function condition: the function to set the sediment to.
+        """
         self._funcs[f.sed].assign(condition)
         self._funcs[f.sed_old].assign(condition)
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
@@ -86,9 +114,14 @@ class CarstModel():
 
     @property
     def output_this_cycle(self):
+        """:returns: True if model will write to output files this cycle.
+        :rtype: bool
+        """
         return self._times["current_time"] % self._times["output_time"] == 0
 
     def advance(self):
+        """Advance the simulation by a single time step.
+        """
         # Increment time
 
         # Advance diffusion
@@ -108,5 +141,4 @@ class CarstModel():
         self._times["current_time"] += self._times["time_step"]
 
         # update sea level
-        t = self._times["current_time"]
         self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
