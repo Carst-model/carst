@@ -1,9 +1,6 @@
 carst package
 =============
 
-Submodules
-----------
-
 carst.functions module
 ----------------------
 
@@ -40,15 +37,6 @@ carst.solver module
 -------------------
 
 .. automodule:: carst.solver
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: carst
    :members:
    :undoc-members:
    :show-inheritance:

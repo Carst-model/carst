@@ -12,15 +12,14 @@
 #
 import os
 import sys
-sys.path.insert(0, '/home/edward/source/carst')
 
+sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = 'carst'
-copyright = '2019, Author'
-author = 'Author'
-
+project = 'Carst Model'
+copyright = '2019, University of York'
+author = 'Jon Hill, Edward Demkowicz-Duffy'
 
 # -- General configuration ---------------------------------------------------
 
@@ -48,7 +47,6 @@ language = 'en'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -61,10 +59,24 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-
 # -- Extension configuration -------------------------------------------------
 
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+
+# Include __init__ methods
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__init__":
+        return False
+    return would_skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)
+
+
+latex_logo = "logos/logo_stnd.png"
+html_logo = "logos/logo_stnd.png"

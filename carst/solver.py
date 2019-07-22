@@ -34,7 +34,7 @@ class CarstModel():
     def __init__(self, options: CarstOptions):
         """Initialise CarstModel instance.
 
-        :param CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.
+        :param carst.options.CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.
         :raise: TypeError if options is not of type CarstOptions.
         :return: The initialised CarstModel instance.
         :rtype: carst.solver.CarstModel
@@ -102,6 +102,13 @@ class CarstModel():
         """
         return copy.deepcopy(self._options["times"])
 
+    @property
+    def output_this_cycle(self):
+        """:returns: True if model will write to output files this cycle.
+        :rtype: bool
+        """
+        return self._times["current_time"] % self._times["output_time"] == 0
+
     def set_condition(self, condition):
         """Set the function describing the status of the sediment.
 
@@ -111,13 +118,6 @@ class CarstModel():
         self._funcs[f.sed_old].assign(condition)
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
         self._out_files.output(self._funcs, self._options)
-
-    @property
-    def output_this_cycle(self):
-        """:returns: True if model will write to output files this cycle.
-        :rtype: bool
-        """
-        return self._times["current_time"] % self._times["output_time"] == 0
 
     def advance(self):
         """Advance the simulation by a single time step.

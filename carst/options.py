@@ -12,7 +12,7 @@ from .output import OutputFilesCollection
 from .processes import PROCESSOR_NEEDED_FUNCS
 
 
-def process_string_lit(target, replacements):
+def _process_string_lit(target, replacements):
     result = target
     for original, replacement in replacements:
         result = result.replace(original, replacement)
@@ -20,6 +20,8 @@ def process_string_lit(target, replacements):
 
 
 class initialisation_method(Enum):
+    """Enum for specifying to carst.options.CarstOptions where you want the initialisation data to come from.
+    """
     raw_values = 1
     diamond_default = 2
 
@@ -36,11 +38,17 @@ class CarstOptions(UserDict):
     )
 
     # Dispatch
-    def __init__(
-            self,
-            ini_type: initialisation_method = initialisation_method.raw_values,
-            *args,
-            **kw_args):
+    def __init__(self, ini_type: initialisation_method, *args, **kw_args):
+        """Initialise the carst.options.CarstOptions module.
+
+        If ini_type is carst.options.initialisation_method.raw_values, args should contain:
+
+        * The base mesh on which the model will operate, of type firedrake.mesh.MeshGeometry.
+
+        :param carst.options.initialisation_method ini_type: The method to use for gathering data.
+        :param Iterable args: Only used if if ini_type is carst.options.initialisation_method.raw_values.
+        :returns: The processed carst.options.CarstModel instance.
+        """
         super().__init__()
         self["type"] = ini_type
         if ini_type == initialisation_method.raw_values:
@@ -101,11 +109,11 @@ class CarstOptions(UserDict):
 
         # Evaluate the literals for the initial_condition and land
         self["land"] = eval(
-            process_string_lit(tree_root[3][0].text,
-                               CarstOptions._STRING_LIT_REPLACEMENTS))
+            _process_string_lit(tree_root[3][0].text,
+                                CarstOptions._STRING_LIT_REPLACEMENTS))
         self["initial_condition"] = eval(
-            process_string_lit(tree_root[4][0].text,
-                               CarstOptions._STRING_LIT_REPLACEMENTS))
+            _process_string_lit(tree_root[4][0].text,
+                                CarstOptions._STRING_LIT_REPLACEMENTS))
 
     def _raw_values(self, base_mesh, land: Callable, sea_level,
                     times: Tuple[float, float, float], output_folder,
