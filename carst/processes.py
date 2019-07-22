@@ -8,7 +8,7 @@ TINY = 1e-10
 
 
 def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
-                               options) -> fd.Function:
+                               options):
     return (fd.inner(
         (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
         options["test_function"],
@@ -61,6 +61,6 @@ def advance_diffusion(funcs: FunctionContainer, options):
     funcs.interpolate(options, *INTERPOLATION_ORDER)
 
 
-def advance_carbonates(funcs: FunctionContainer, options) -> fd.Function:
+def advance_carbonates(funcs: FunctionContainer, options):
     funcs.interpolate(options, f.light_attenuation)
     return options["carbonate_production"] * funcs[f.light_attenuation]

@@ -107,9 +107,9 @@ class CarstOptions(UserDict):
             process_string_lit(tree_root[4][0].text,
                                CarstOptions._STRING_LIT_REPLACEMENTS))
 
-    def _raw_values(self, base_mesh: fd.mesh.MeshGeometry, land: Callable,
-                    sea_level: fd.Constant, times: Tuple[float, float, float],
-                    output_folder, **kw_args: dict) -> dict:
+    def _raw_values(self, base_mesh, land: Callable, sea_level,
+                    times: Tuple[float, float, float], output_folder,
+                    **kw_args: dict) -> dict:
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level, str):

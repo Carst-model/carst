@@ -67,7 +67,7 @@ class CarstModel():
             self.set_condition(self._options["initial_condition"])
 
     @property
-    def land(self) -> fd.function.Function:
+    def land(self):
         """:returns: The firedrake object containing the land function.
         :rtype: firedrake.function.Function
         """
@@ -89,7 +89,7 @@ class CarstModel():
         return self._options["coordinate_space"]
 
     @property
-    def function_space(self) -> fd.functionspaceimpl.WithGeometry:
+    def function_space(self):
         """:returns: The firedrake object describing the function space the model is operating in.
         :rtype: firedrake.functionspaceimpl.WithGeometry
         """
