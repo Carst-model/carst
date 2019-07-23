@@ -64,7 +64,7 @@
         <span class="k">lambda</span> <span class="n">solver</span><span class="p">:</span> <span class="p">(</span><span class="n">solver</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">sea_level</span><span class="p">]),</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="CarstModel.__init__"><a class="viewcode-back" href="../../carst.html#carst.solver.CarstModel.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">CarstOptions</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialise CarstModel instance.</span>
 
 <span class="sd">        :param carst.options.CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.</span>
@@ -97,7 +97,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_funcs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">])</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_condition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">land</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -108,7 +108,7 @@
 
     <span class="c1"># Possibly change me to return by value/representation, not reference</span>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">funcs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FunctionContainer</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">funcs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;:returns: The FunctionContainer object which holds the current status of all the mathematical functions the model is using.</span>
 <span class="sd">        :rtype: carst.functions.FunctionContainer</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -129,7 +129,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">times</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">times</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;:returns: A dict containing all the time variables the model is using.</span>
 <span class="sd">        :rtype: dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>

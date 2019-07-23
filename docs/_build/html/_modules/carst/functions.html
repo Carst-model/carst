@@ -42,6 +42,8 @@
 <span class="c1"># To add a function, add it&#39;s label to carst_funcs then add the corresponding logic to</span>
 <span class="c1"># FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)</span>
 <div class="viewcode-block" id="carst_funcs"><a class="viewcode-back" href="../../carst.html#carst.functions.carst_funcs">[docs]</a><span class="k">class</span> <span class="nc">carst_funcs</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enumerator to correspond to the functions the model relies on.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">sed</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">sed_old</span> <span class="o">=</span> <span class="mi">2</span>
     <span class="n">surface</span> <span class="o">=</span> <span class="mi">3</span>
@@ -54,6 +56,14 @@
 
 
 <div class="viewcode-block" id="FunctionContainer"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer">[docs]</a><span class="k">class</span> <span class="nc">FunctionContainer</span><span class="p">(</span><span class="n">UserDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Mapping to hold functions required for modelling.</span>
+
+<span class="sd">    Inherits *dict*/*UserDict* to allow easy access to parent data. Note that only `carst.functions.carst_funcs`_ values are acceptable as keys.</span>
+
+<span class="sd">    :param carst.options.CarstOptions options: The CarstOptions instance the model is working off. Needed for supplementary data.</span>
+<span class="sd">    :param Sequence[carst.functions.carst_funcs] wanted_funcs: The collection of carst_funcs which specifies which function types the object should contain.</span>
+<span class="sd">    :returns: An initialised carst.functions.FunctionContainer instance. The functions are still blank (ie. not interpolated).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Workaround for python&#39;s lack of a switch/match statement &gt;:(</span>
     <span class="n">_INTERPOLATION_FUNCS</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">:</span>
@@ -76,7 +86,7 @@
         <span class="c1">#lambda funcs, options: options[&quot;sea_level&quot;],</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="FunctionContainer.__init__"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">wanted_funcs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">carst_funcs</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">wanted_funcs</span><span class="p">):</span>
         <span class="n">function_space</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">({</span>
             <span class="n">func_name</span><span class="p">:</span> <span class="n">fd</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span>
@@ -84,26 +94,27 @@
                 <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">func_name</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">func_name</span> <span class="ow">in</span> <span class="n">wanted_funcs</span>
-        <span class="p">})</span></div>
+        <span class="p">})</span>
 
     <span class="c1"># Enforce type checking on __getitem__ and __setitem__</span>
-    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">carst_funcs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">carst_funcs</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Key {str(key)} not a member of carst_funcs&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">carst_funcs</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">carst_funcs</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Key {str(key)} not a member of carst_funcs&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">fd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Value {str(val)} not of type firedrake.Function&quot;</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
 
-<div class="viewcode-block" id="FunctionContainer.interpolate"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer.interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="n">options</span><span class="p">,</span>
-            <span class="o">*</span><span class="n">function_names</span><span class="p">:</span> <span class="n">carst_funcs</span><span class="p">,</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="FunctionContainer.interpolate"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer.interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">*</span><span class="n">function_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Interpolate the functions contained in the module by one time step.</span>
+
+<span class="sd">        :param carst.options.CarstOptions options: The options set that the model is currently working on.</span>
+<span class="sd">        :param Sequence[carst.functions.carst_funcs] function_names: The functions to be interpolated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">function_names</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>

@@ -31,7 +31,7 @@ class CarstModel():
         lambda solver: (solver.funcs[f.sea_level]),
     }
 
-    def __init__(self, options: CarstOptions):
+    def __init__(self, options):
         """Initialise CarstModel instance.
 
         :param carst.options.CarstOptions options: The CarstOptions instance whose information you want to use to initialise the model.
@@ -75,7 +75,7 @@ class CarstModel():
 
     # Possibly change me to return by value/representation, not reference
     @property
-    def funcs(self) -> FunctionContainer:
+    def funcs(self):
         """:returns: The FunctionContainer object which holds the current status of all the mathematical functions the model is using.
         :rtype: carst.functions.FunctionContainer
         """
@@ -96,7 +96,7 @@ class CarstModel():
         return self._options["function_space"]
 
     @property
-    def times(self) -> dict:
+    def times(self):
         """:returns: A dict containing all the time variables the model is using.
         :rtype: dict
         """

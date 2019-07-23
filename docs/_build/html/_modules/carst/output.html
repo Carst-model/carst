@@ -52,23 +52,26 @@
 
 
 <div class="viewcode-block" id="OutputFilesCollection"><a class="viewcode-back" href="../../carst.html#carst.output.OutputFilesCollection">[docs]</a><span class="k">class</span> <span class="nc">OutputFilesCollection</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Expects a dict for wanted_files</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;A container for firedrake File objects.</span>
 
-<div class="viewcode-block" id="OutputFilesCollection.__init__"><a class="viewcode-back" href="../../carst.html#carst.output.OutputFilesCollection.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">enabled_processes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">carst_funcs</span><span class="p">]):</span>
+<span class="sd">    :param str output_folder: The relative file path to the directory the output files should be stored in.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
         <span class="n">output_folder</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">output_folder</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;</span><span class="si">{output_folder}</span><span class="s2"> not a valid path&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">file_name</span><span class="p">:</span> <span class="n">fd</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">+</span> <span class="s2">&quot;.pvd&quot;</span><span class="p">))</span>
             <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">_WANTED_FILES</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
 
-<div class="viewcode-block" id="OutputFilesCollection.output"><a class="viewcode-back" href="../../carst.html#carst.output.OutputFilesCollection.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-               <span class="n">funcs</span><span class="p">:</span> <span class="n">FunctionContainer</span><span class="p">,</span>
-               <span class="n">options</span><span class="p">,</span>
-               <span class="n">names</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="OutputFilesCollection.output"><a class="viewcode-back" href="../../carst.html#carst.output.OutputFilesCollection.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write the current status of the model&#39;s functions to the output files stored in this container.</span>
+
+<span class="sd">        :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance which *OutputFilesCollection* will use as data.</span>
+<span class="sd">        :param carst.options.CarstOptions options: The *CarstOptions* onject the model is working off.</span>
+<span class="sd">        :param Iterable[str] names: Defaults to None. Names of files which are to be written to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">to_write</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">names</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">to_write</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>

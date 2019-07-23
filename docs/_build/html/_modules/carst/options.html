@@ -60,6 +60,20 @@
 
 
 <div class="viewcode-block" id="CarstOptions"><a class="viewcode-back" href="../../carst.html#carst.options.CarstOptions">[docs]</a><span class="k">class</span> <span class="nc">CarstOptions</span><span class="p">(</span><span class="n">UserDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Takes various forms of input and stores it in a form expected by carst.solver.CarstModel.</span>
+
+<span class="sd">    :param carst.options.initialisation_method ini_type: The method to use for gathering data.</span>
+<span class="sd">    :param Iterable args: See below.</span>
+
+<span class="sd">    If ini_type is `carst.options.initialisation_method.raw_values`_, *args* should contain:</span>
+
+<span class="sd">    * The base mesh on which the model will operate, of type *firedrake.mesh.MeshGeometry*.</span>
+<span class="sd">    * A function which takes arguments representing the coordinate space and function space of the model&#39;s workspace, and returns a firedrake object describing the shape of the seabed.</span>
+<span class="sd">    * A *str* representation of the sea level (typically as a function of time). See the string representation table for more info.</span>
+<span class="sd">    * A collection containing the times (*float*) for the model, ie. (current_time, time_step, output_time), in that order.</span>
+<span class="sd">    * A (relative) path to the directory to be used for output.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">_STRING_LIT_REPLACEMENTS</span> <span class="o">=</span> <span class="p">(</span>
         <span class="p">(</span><span class="s2">&quot;tanh&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.tanh&quot;</span><span class="p">),</span>
         <span class="p">(</span><span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="s2">&quot;fd.sqrt&quot;</span><span class="p">),</span>
@@ -71,23 +85,13 @@
     <span class="p">)</span>
 
     <span class="c1"># Dispatch</span>
-<div class="viewcode-block" id="CarstOptions.__init__"><a class="viewcode-back" href="../../carst.html#carst.options.CarstOptions.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_type</span><span class="p">:</span> <span class="n">initialisation_method</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Initialise the carst.options.CarstOptions module.</span>
-
-<span class="sd">        If ini_type is carst.options.initialisation_method.raw_values, args should contain:</span>
-
-<span class="sd">        * The base mesh on which the model will operate, of type firedrake.mesh.MeshGeometry.</span>
-
-<span class="sd">        :param carst.options.initialisation_method ini_type: The method to use for gathering data.</span>
-<span class="sd">        :param Iterable args: Only used if if ini_type is carst.options.initialisation_method.raw_values.</span>
-<span class="sd">        :returns: The processed carst.options.CarstModel instance.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_type</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_args</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ini_type</span>
         <span class="k">if</span> <span class="n">ini_type</span> <span class="o">==</span> <span class="n">initialisation_method</span><span class="o">.</span><span class="n">raw_values</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_raw_values</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw_args</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">ini_type</span> <span class="o">==</span> <span class="n">initialisation_method</span><span class="o">.</span><span class="n">diamond_default</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_diamond_default</span><span class="p">(</span><span class="n">kw_args</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">])</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_diamond_default</span><span class="p">(</span><span class="n">kw_args</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_diamond_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;diamond_input.xml&quot;</span><span class="p">):</span>
         <span class="n">tree_root</span> <span class="o">=</span> <span class="n">ElementTree</span><span class="o">.</span><span class="n">ElementTree</span><span class="p">(</span><span class="n">file</span><span class="o">=</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
@@ -137,8 +141,7 @@
             <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">][</span><span class="n">process</span><span class="p">]:</span>
                 <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="n">process</span><span class="p">])</span>
 
-        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
-                                                  <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
 
         <span class="c1"># Evaluate the literals for the initial_condition and land</span>
         <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span>
@@ -148,9 +151,8 @@
             <span class="n">_process_string_lit</span><span class="p">(</span><span class="n">tree_root</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
                                 <span class="n">CarstOptions</span><span class="o">.</span><span class="n">_STRING_LIT_REPLACEMENTS</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">_raw_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_mesh</span><span class="p">,</span> <span class="n">land</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">sea_level</span><span class="p">,</span>
-                    <span class="n">times</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">output_folder</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kw_args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_raw_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_mesh</span><span class="p">,</span> <span class="n">land</span><span class="p">,</span> <span class="n">sea_level</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kw_args</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">base_mesh</span><span class="p">,</span> <span class="n">fd</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">MeshGeometry</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;base_mesh not of type firedrake.Mesh&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sea_level</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -190,8 +192,7 @@
                 <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;wanted_funcs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">PROCESSOR_NEEDED_FUNCS</span><span class="p">[</span><span class="n">process</span><span class="p">])</span>
 
         <span class="c1"># Initialise out_files</span>
-        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span>
-                                                  <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;enabled_steps&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;out_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OutputFilesCollection</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
         <span class="bp">self</span><span class="p">[</span><span class="s2">&quot;diff_coeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;diff_coeff&#39;</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">kw_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;initial_condition&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

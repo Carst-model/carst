@@ -9,6 +9,8 @@ import firedrake as fd
 # To add a function, add it's label to carst_funcs then add the corresponding logic to
 # FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)
 class carst_funcs(enum.Enum):
+    """Enumerator to correspond to the functions the model relies on.
+    """
     sed = 1
     sed_old = 2
     surface = 3
@@ -21,6 +23,14 @@ class carst_funcs(enum.Enum):
 
 
 class FunctionContainer(UserDict):
+    """Mapping to hold functions required for modelling.
+
+    Inherits *dict*/*UserDict* to allow easy access to parent data. Note that only `carst.functions.carst_funcs`_ values are acceptable as keys.
+
+    :param carst.options.CarstOptions options: The CarstOptions instance the model is working off. Needed for supplementary data.
+    :param Sequence[carst.functions.carst_funcs] wanted_funcs: The collection of carst_funcs which specifies which function types the object should contain.
+    :returns: An initialised carst.functions.FunctionContainer instance. The functions are still blank (ie. not interpolated).
+    """
     # Workaround for python's lack of a switch/match statement >:(
     _INTERPOLATION_FUNCS = {
         carst_funcs.surface:
@@ -43,7 +53,7 @@ class FunctionContainer(UserDict):
         #lambda funcs, options: options["sea_level"],
     }
 
-    def __init__(self, options, wanted_funcs: Sequence[carst_funcs]):
+    def __init__(self, options, wanted_funcs):
         function_space = options["function_space"]
         super().__init__({
             func_name: fd.Function(
@@ -54,23 +64,24 @@ class FunctionContainer(UserDict):
         })
 
     # Enforce type checking on __getitem__ and __setitem__
-    def __getitem__(self, key: carst_funcs):
+    def __getitem__(self, key):
         if not isinstance(key, carst_funcs):
             raise TypeError(f"Key {str(key)} not a member of carst_funcs")
         return super().__getitem__(key)
 
-    def __setitem__(self, key: carst_funcs, val):
+    def __setitem__(self, key, val):
         if not isinstance(key, carst_funcs):
             raise TypeError(f"Key {str(key)} not a member of carst_funcs")
         if not isinstance(val, fd.Function):
             raise TypeError(f"Value {str(val)} not of type firedrake.Function")
         super().__setitem__(key, val)
 
-    def interpolate(
-            self,
-            options,
-            *function_names: carst_funcs,
-    ):
+    def interpolate(self, options, *function_names):
+        """Interpolate the functions contained in the module by one time step.
+
+        :param carst.options.CarstOptions options: The options set that the model is currently working on.
+        :param Sequence[carst.functions.carst_funcs] function_names: The functions to be interpolated.
+        """
         for name in function_names:
             try:
                 self[name].interpolate(

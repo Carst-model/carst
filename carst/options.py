@@ -27,6 +27,20 @@ class initialisation_method(Enum):
 
 
 class CarstOptions(UserDict):
+    """Takes various forms of input and stores it in a form expected by carst.solver.CarstModel.
+
+    :param carst.options.initialisation_method ini_type: The method to use for gathering data.
+    :param Iterable args: See below.
+
+    If ini_type is `carst.options.initialisation_method.raw_values`_, *args* should contain:
+
+    * The base mesh on which the model will operate, of type *firedrake.mesh.MeshGeometry*.
+    * A function which takes arguments representing the coordinate space and function space of the model's workspace, and returns a firedrake object describing the shape of the seabed.
+    * A *str* representation of the sea level (typically as a function of time). See the string representation table for more info.
+    * A collection containing the times (*float*) for the model, ie. (current_time, time_step, output_time), in that order.
+    * A (relative) path to the directory to be used for output.
+    """
+
     _STRING_LIT_REPLACEMENTS = (
         ("tanh", "fd.tanh"),
         ("sqrt", "fd.sqrt"),
@@ -38,17 +52,7 @@ class CarstOptions(UserDict):
     )
 
     # Dispatch
-    def __init__(self, ini_type: initialisation_method, *args, **kw_args):
-        """Initialise the carst.options.CarstOptions module.
-
-        If ini_type is carst.options.initialisation_method.raw_values, args should contain:
-
-        * The base mesh on which the model will operate, of type firedrake.mesh.MeshGeometry.
-
-        :param carst.options.initialisation_method ini_type: The method to use for gathering data.
-        :param Iterable args: Only used if if ini_type is carst.options.initialisation_method.raw_values.
-        :returns: The processed carst.options.CarstModel instance.
-        """
+    def __init__(self, ini_type, *args, **kw_args):
         super().__init__()
         self["type"] = ini_type
         if ini_type == initialisation_method.raw_values:
@@ -104,8 +108,7 @@ class CarstOptions(UserDict):
             if self["enabled_steps"][process]:
                 self["wanted_funcs"].extend(PROCESSOR_NEEDED_FUNCS[process])
 
-        self["out_files"] = OutputFilesCollection(tree_root[2][0].text,
-                                                  self["enabled_steps"])
+        self["out_files"] = OutputFilesCollection(tree_root[2][0].text)
 
         # Evaluate the literals for the initial_condition and land
         self["land"] = eval(
@@ -115,9 +118,8 @@ class CarstOptions(UserDict):
             _process_string_lit(tree_root[4][0].text,
                                 CarstOptions._STRING_LIT_REPLACEMENTS))
 
-    def _raw_values(self, base_mesh, land: Callable, sea_level,
-                    times: Tuple[float, float, float], output_folder,
-                    **kw_args: dict) -> dict:
+    def _raw_values(self, base_mesh, land, sea_level, times, output_folder,
+                    **kw_args):
         if not isinstance(base_mesh, fd.mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level, str):
@@ -157,8 +159,7 @@ class CarstOptions(UserDict):
                 self["wanted_funcs"].extend(PROCESSOR_NEEDED_FUNCS[process])
 
         # Initialise out_files
-        self["out_files"] = OutputFilesCollection(output_folder,
-                                                  self["enabled_steps"])
+        self["out_files"] = OutputFilesCollection(output_folder)
         self["diff_coeff"] = float(kw_args.get('diff_coeff'))
 
         if kw_args.get("initial_condition") is not None:

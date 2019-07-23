@@ -37,18 +37,34 @@
 <span id="carst-functions-module"></span><h2>carst.functions module<a class="headerlink" href="#module-carst.functions" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="carst.functions.FunctionContainer">
-<em class="property">class </em><code class="sig-prename descclassname">carst.functions.</code><code class="sig-name descname">FunctionContainer</code><span class="sig-paren">(</span><em class="sig-param">options, wanted_funcs: Sequence[carst.functions.carst_funcs]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">carst.functions.</code><code class="sig-name descname">FunctionContainer</code><span class="sig-paren">(</span><em class="sig-param">options</em>, <em class="sig-param">wanted_funcs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.UserDict</span></code></p>
-<dl class="method">
-<dt id="carst.functions.FunctionContainer.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">options, wanted_funcs: Sequence[carst.functions.carst_funcs]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
-
+<p>Mapping to hold functions required for modelling.</p>
+<p>Inherits <em>dict</em>/<em>UserDict</em> to allow easy access to parent data. Note that only <a class="reference internal" href="#carst.functions.carst_funcs">carst.functions.carst_funcs</a> values are acceptable as keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The CarstOptions instance the model is working off. Needed for supplementary data.</p></li>
+<li><p><strong>wanted_funcs</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#carst.functions.carst_funcs" title="carst.functions.carst_funcs"><em>carst.functions.carst_funcs</em></a><em>]</em>) – The collection of carst_funcs which specifies which function types the object should contain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An initialised carst.functions.FunctionContainer instance. The functions are still blank (ie. not interpolated).</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="carst.functions.FunctionContainer.interpolate">
 <code class="sig-name descname">interpolate</code><span class="sig-paren">(</span><em class="sig-param">options</em>, <em class="sig-param">*function_names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer.interpolate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer.interpolate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Interpolate the functions contained in the module by one time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The options set that the model is currently working on.</p></li>
+<li><p><strong>function_names</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#carst.functions.carst_funcs" title="carst.functions.carst_funcs"><em>carst.functions.carst_funcs</em></a><em>]</em>) – The functions to be interpolated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -56,7 +72,7 @@
 <dt id="carst.functions.carst_funcs">
 <em class="property">class </em><code class="sig-prename descclassname">carst.functions.</code><code class="sig-name descname">carst_funcs</code><a class="reference internal" href="_modules/carst/functions.html#carst_funcs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.carst_funcs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>An enumeration.</p>
+<p>Enumerator to correspond to the functions the model relies on.</p>
 <dl class="attribute">
 <dt id="carst.functions.carst_funcs.depth">
 <code class="sig-name descname">depth</code><em class="property"> = 6</em><a class="headerlink" href="#carst.functions.carst_funcs.depth" title="Permalink to this definition">¶</a></dt>
@@ -109,29 +125,25 @@
 <span id="carst-options-module"></span><h2>carst.options module<a class="headerlink" href="#module-carst.options" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="carst.options.CarstOptions">
-<em class="property">class </em><code class="sig-prename descclassname">carst.options.</code><code class="sig-name descname">CarstOptions</code><span class="sig-paren">(</span><em class="sig-param">ini_type: carst.options.initialisation_method</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kw_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/options.html#CarstOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.options.CarstOptions" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">carst.options.</code><code class="sig-name descname">CarstOptions</code><span class="sig-paren">(</span><em class="sig-param">ini_type</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kw_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/options.html#CarstOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.options.CarstOptions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.UserDict</span></code></p>
-<dl class="method">
-<dt id="carst.options.CarstOptions.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">ini_type: carst.options.initialisation_method</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kw_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/options.html#CarstOptions.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.options.CarstOptions.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialise the carst.options.CarstOptions module.</p>
-<p>If ini_type is carst.options.initialisation_method.raw_values, args should contain:</p>
-<ul class="simple">
-<li><p>The base mesh on which the model will operate, of type firedrake.mesh.MeshGeometry.</p></li>
-</ul>
+<p>Takes various forms of input and stores it in a form expected by carst.solver.CarstModel.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ini_type</strong> (<a class="reference internal" href="#carst.options.initialisation_method" title="carst.options.initialisation_method"><em>carst.options.initialisation_method</em></a>) – The method to use for gathering data.</p></li>
-<li><p><strong>args</strong> (<em>Iterable</em>) – Only used if if ini_type is carst.options.initialisation_method.raw_values.</p></li>
+<li><p><strong>args</strong> (<em>Iterable</em>) – See below.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The processed carst.options.CarstModel instance.</p>
-</dd>
 </dl>
-</dd></dl>
-
+<p>If ini_type is <a class="reference internal" href="#carst.options.initialisation_method.raw_values">carst.options.initialisation_method.raw_values</a>, <em>args</em> should contain:</p>
+<ul class="simple">
+<li><p>The base mesh on which the model will operate, of type <em>firedrake.mesh.MeshGeometry</em>.</p></li>
+<li><p>A function which takes arguments representing the coordinate space and function space of the model’s workspace, and returns a firedrake object describing the shape of the seabed.</p></li>
+<li><p>A <em>str</em> representation of the sea level (typically as a function of time). See the string representation table for more info.</p></li>
+<li><p>A collection containing the times (<em>float</em>) for the model, ie. (current_time, time_step, output_time), in that order.</p></li>
+<li><p>A (relative) path to the directory to be used for output.</p></li>
+</ul>
 </dd></dl>
 
 <dl class="class">
@@ -156,19 +168,28 @@
 <span id="carst-output-module"></span><h2>carst.output module<a class="headerlink" href="#module-carst.output" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="carst.output.OutputFilesCollection">
-<em class="property">class </em><code class="sig-prename descclassname">carst.output.</code><code class="sig-name descname">OutputFilesCollection</code><span class="sig-paren">(</span><em class="sig-param">output_folder: str, enabled_processes: Iterable[carst.functions.carst_funcs]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">carst.output.</code><code class="sig-name descname">OutputFilesCollection</code><span class="sig-paren">(</span><em class="sig-param">output_folder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Expects a dict for wanted_files</p>
-<dl class="method">
-<dt id="carst.output.OutputFilesCollection.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">output_folder: str, enabled_processes: Iterable[carst.functions.carst_funcs]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
-
+<p>A container for firedrake File objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>output_folder</strong> (<em>str</em>) – The relative file path to the directory the output files should be stored in.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="carst.output.OutputFilesCollection.output">
-<code class="sig-name descname">output</code><span class="sig-paren">(</span><em class="sig-param">funcs: carst.functions.FunctionContainer</em>, <em class="sig-param">options</em>, <em class="sig-param">names: Iterable[str] = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection.output" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-name descname">output</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em>, <em class="sig-param">names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the current status of the model’s functions to the output files stored in this container.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance which <em>OutputFilesCollection</em> will use as data.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> onject the model is working off.</p></li>
+<li><p><strong>names</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Defaults to None. Names of files which are to be written to.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -195,29 +216,9 @@
 <span id="carst-solver-module"></span><h2>carst.solver module<a class="headerlink" href="#module-carst.solver" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="carst.solver.CarstModel">
-<em class="property">class </em><code class="sig-prename descclassname">carst.solver.</code><code class="sig-name descname">CarstModel</code><span class="sig-paren">(</span><em class="sig-param">options: carst.options.CarstOptions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">carst.solver.</code><code class="sig-name descname">CarstModel</code><span class="sig-paren">(</span><em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Simulates sediment formation on the seabed.</p>
-<dl class="method">
-<dt id="carst.solver.CarstModel.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">options: carst.options.CarstOptions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialise CarstModel instance.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The CarstOptions instance whose information you want to use to initialise the model.</p>
-</dd>
-<dt class="field-even">Raise</dt>
-<dd class="field-even"><p>TypeError if options is not of type CarstOptions.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The initialised CarstModel instance.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="#carst.solver.CarstModel" title="carst.solver.CarstModel">carst.solver.CarstModel</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="method">
 <dt id="carst.solver.CarstModel.advance">
 <code class="sig-name descname">advance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel.advance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel.advance" title="Permalink to this definition">¶</a></dt>
