@@ -37,7 +37,7 @@ class OutputFilesCollection:
 
         :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance which *OutputFilesCollection* will use as data.
         :param carst.options.CarstOptions options: The *CarstOptions* onject the model is working off.
-        :param Iterable[str] names: Defaults to None. Names of files which are to be written to.
+        :param Iterable[str] names: Names of files which are to be written to. Should be a subset of ("land", "layer_data", "surfaces", "sea_level"). If not provided, all files will be written to.
         """
         to_write = self._out_files.keys() if names is None else names
         if not set(to_write).issubset(set(self._out_files.keys())):

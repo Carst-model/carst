@@ -70,7 +70,7 @@
 
 <span class="sd">        :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance which *OutputFilesCollection* will use as data.</span>
 <span class="sd">        :param carst.options.CarstOptions options: The *CarstOptions* onject the model is working off.</span>
-<span class="sd">        :param Iterable[str] names: Defaults to None. Names of files which are to be written to.</span>
+<span class="sd">        :param Iterable[str] names: Names of files which are to be written to. Should be a subset of (&quot;land&quot;, &quot;layer_data&quot;, &quot;surfaces&quot;, &quot;sea_level&quot;). If not provided, all files will be written to.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">to_write</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">names</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">to_write</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_out_files</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>

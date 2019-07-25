@@ -185,7 +185,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance which <em>OutputFilesCollection</em> will use as data.</p></li>
 <li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> onject the model is working off.</p></li>
-<li><p><strong>names</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Defaults to None. Names of files which are to be written to.</p></li>
+<li><p><strong>names</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Names of files which are to be written to. Should be a subset of (“land”, “layer_data”, “surfaces”, “sea_level”). If not provided, all files will be written to.</p></li>
 </ul>
 </dd>
 </dl>
@@ -198,18 +198,52 @@
 <span id="carst-processes-module"></span><h2>carst.processes module<a class="headerlink" href="#module-carst.processes" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="carst.processes.DIFFUSION_EQUATION_GENERIC">
-<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">DIFFUSION_EQUATION_GENERIC</code><span class="sig-paren">(</span><em class="sig-param">funcs: carst.functions.FunctionContainer</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#DIFFUSION_EQUATION_GENERIC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.DIFFUSION_EQUATION_GENERIC" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">DIFFUSION_EQUATION_GENERIC</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#DIFFUSION_EQUATION_GENERIC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.DIFFUSION_EQUATION_GENERIC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a firedrake object representing the diffusion equation for the current model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A firedrake Function to be used for solving the diffusion equation with the current model (reusable).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>firedrake.function.Function</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="carst.processes.advance_carbonates">
-<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_carbonates</code><span class="sig-paren">(</span><em class="sig-param">funcs: carst.functions.FunctionContainer</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_carbonates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_carbonates" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_carbonates</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_carbonates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_carbonates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform carbonate simulation over 1 time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from. This is modified in-place.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="carst.processes.advance_diffusion">
-<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_diffusion</code><span class="sig-paren">(</span><em class="sig-param">funcs: carst.functions.FunctionContainer</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_diffusion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_diffusion" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_diffusion</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_diffusion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_diffusion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform diffusion simulation over 1 time step.</p>
+<p>Note that this also performs interpolation over the rest of the <em>FunctionContainer</em> since it is the most basic function of the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from. This is modified in-place.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 <div class="section" id="module-carst.solver">

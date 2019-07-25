@@ -13,7 +13,12 @@ Welcome to the documentation for the Carst Model!
    carst
 
 
-See the firedrake documentation at https://firedrakeproject.org/firedrake.html for a complement to this.
+See the firedrake documentation at https://firedrakeproject.org/firedrake.html for a complement to these documents.
+
+Example Usage
+=============
+
+
 
 
 Indices and tables
