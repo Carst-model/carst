@@ -7,12 +7,11 @@ FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
 # Paths to alias long targets
 DIAMOND_PIP := firedrake/lib/python3.7/site-packages/diamond
 DXDIFF_PIP := firedrake/lib/python3.7/site-packages/dxdiff
-SPUD_BASE := firedrake/share/spud/spud_base.rnc
+SPUD_BASE := firedrake/share/spud/spud_base.rnc firedrake/share/spud/spud_base.rng
 
 # For sourcing the shell file to activate the firedrake venv
 FIREDRAKE_ACTIVATION := firedrake/bin/activate
 
-# Temporary test
 all: diamond_default.rng $(DIAMOND_PIP) firedrake
 	{ \
 		set -e; \

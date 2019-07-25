@@ -21,14 +21,11 @@ def EXAMPLE_LAND(coordinate_space, function_space):
 
 # Example initial condition
 def EXAMPLE_INITIAL_COND(coordinate_space, function_space):
-    return fd.project(
-        (20000 * (1 / (2 * fd.sqrt(2 * math.pi * 250 * 250))) * fd.exp(-(
-            (coordinate_space[0] - 6000) *
-            (coordinate_space[0] - 6000)) / (2 * 250 * 250))) +
-        (50000 * (1 / (2 * fd.sqrt(2 * math.pi * 1000 * 1000))) * fd.exp(-(
-            (coordinate_space[0] - 4000) *
-            (coordinate_space[0] - 4000)) / (2 * 1000 * 1000))),
-        function_space)
+    return fd.project((10000 / (fd.sqrt(2 * math.pi * 250**2)) * fd.exp(-(
+        (coordinate_space[0] - 6000)**2) / (2 * 250**2))) +
+                      (25000 / (fd.sqrt(2 * math.pi * 1000**2)) * fd.exp(-(
+                          (coordinate_space[0] - 4000)**2) / (2 * 1000**2))),
+                      function_space)
 
 
 # Initialise a solver and add land

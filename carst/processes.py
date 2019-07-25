@@ -40,8 +40,6 @@ INTERPOLATION_ORDER = (
 )
 
 PROCESSOR_NEEDED_FUNCS = {
-    """The functions which different processes require to work on. "basic" is required by all processes.
-    """
     "basic": (
         f.sed,
         f.sed_old,
