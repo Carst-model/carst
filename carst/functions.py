@@ -1,12 +1,13 @@
-import firedrake as fd
 import enum
 import math
+from collections import UserDict
+from typing import Sequence
 
-TINY = 1e-10
+import firedrake as fd
 
 
-# To add a function, add it to carst_funcs then add the corresponding logic to
-# FunctionContainer._interpolation_funcs (make sure you get the key right!)
+# To add a function, add it's label to carst_funcs then add the corresponding logic to
+# FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)
 class carst_funcs(enum.Enum):
     sed = 1
     sed_old = 2
@@ -14,50 +15,74 @@ class carst_funcs(enum.Enum):
     limiter = 4
     thickness = 5
     depth = 6
-    diff = 7
+    diff_coeff = 7
     light_attenuation = 8
     sea_level = 9
-    slf = 10
 
 
-class FunctionContainer():
-    _interpolation_funcs = {
-        carst_funcs.surface: lambda land, funcs: (land + funcs[carst_funcs.sed] + land) + abs((land + funcs[carst_funcs.sed]) - land),
-        carst_funcs.thickness: lambda land, funcs: (funcs[carst_funcs.surface] - land),
-        carst_funcs.limiter: lambda land, funcs: (funcs[carst_funcs.surface] - land) / (funcs[carst_funcs.surface] - land + TINY),
-        carst_funcs.depth: lambda land, funcs: funcs[carst_funcs.sea_level] - funcs[carst_funcs.surface],
-        carst_funcs.diff: lambda land, funcs: 2 / fd.sqrt(2 * math.pi) * fd.exp(-0.5 * funcs[carst_funcs.depth] ** 2),
+class FunctionContainer(UserDict):
+    # Workaround for python's lack of a switch/match statement >:(
+    _INTERPOLATION_FUNCS = {
+        carst_funcs.surface:
+        lambda funcs, options: ((((2.0 * options["land"]) + funcs[carst_funcs.sed]) + abs(funcs[
+                carst_funcs.sed])) / 2.0),
+        carst_funcs.thickness:
+        lambda funcs, options: (funcs[carst_funcs.surface] - options["land"]),
+        carst_funcs.limiter:
+        lambda funcs, options: ((funcs[carst_funcs.surface] - options[
+            "land"]) / (funcs[carst_funcs.surface] - options["land"] + 1e-10)),
+        carst_funcs.depth:
+        lambda funcs, options: (funcs[carst_funcs.sea_level] - funcs[
+            carst_funcs.surface]),
+        carst_funcs.diff_coeff:
+        lambda funcs, options: (options["diff_coeff"] * ((2. / fd.sqrt(2. * math.pi)) * fd.exp(-0.5 * ((funcs[
+            carst_funcs.depth]-5.0)/10.0)**2))),
+        carst_funcs.light_attenuation:
+        lambda funcs, options: (1.0/(1.+fd.exp(-2*funcs[carst_funcs.depth]*25.0))* fd.exp(-1.0*funcs[carst_funcs.depth]/10.)),
+
+        #carst_funcs.sea_level:
+        #lambda funcs, options: options["sea_level"],
     }
 
-    def __init__(self, solver, wanted_funcs):
-        # Type checking
-        for func in wanted_funcs:
-            if not isinstance(func, carst_funcs):
-                raise ValueError()
-
-        self._solver = solver
-        self.functions = {
+    def __init__(self, options, wanted_funcs: Sequence[carst_funcs]):
+        function_space = options["function_space"]
+        super().__init__({
             func_name: fd.Function(
-                self._solver.function_space,
+                function_space,
                 name=str(func_name),
-            ) for func_name in wanted_funcs
-        }
+            )
+            for func_name in wanted_funcs
+        })
 
-    def interpolate(self, function_names):
-        if isinstance(function_names, carst_funcs):
-            if function_names not in self.functions.keys():
-                raise ValueError("That function isn't in this object")
+    # Enforce type checking on __getitem__ and __setitem__
+    def __getitem__(self, key: carst_funcs) -> fd.Function:
+        if not isinstance(key, carst_funcs):
+            raise TypeError(f"Key {str(key)} not a member of carst_funcs")
+        return super().__getitem__(key)
 
-            to_interpolate = [function_names]
-        else:
-            to_interpolate = function_names
-            # Bait an exception if to_interpolate isn't iterable
-            iter(to_interpolate)
+    def __setitem__(self, key: carst_funcs, val: fd.Function):
+        if not isinstance(key, carst_funcs):
+            raise TypeError(f"Key {str(key)} not a member of carst_funcs")
+        if not isinstance(val, fd.Function):
+            raise TypeError(f"Value {str(val)} not of type firedrake.Function")
+        super().__setitem__(key, val)
 
-        for function in to_interpolate:
+    def interpolate(
+            self,
+            options,
+            *function_names: carst_funcs,
+    ):
+        for name in function_names:
             try:
-                self.functions[function].interpolate(
-                    FunctionContainer._interpolation_funcs[function](self._solver.land, self.functions)
-                )
+                self[name].interpolate(
+                    FunctionContainer._INTERPOLATION_FUNCS[name](self,
+                                                                 options))
             except KeyError:
-                pass
+                continue
+
+    def __repr__(self):
+        return str(__class__).split("'")[1] + "(" + ", ".join(
+            self.keys()) + ")"
+
+
+

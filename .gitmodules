@@ -1,0 +1,4 @@
+[submodule "spud"]
+	path = spud
+	url = https://github.com/Carst-model/spud
+	branch = stripped
