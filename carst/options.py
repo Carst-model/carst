@@ -2,15 +2,13 @@
 import math
 from collections import UserDict
 from enum import Enum
-from itertools import chain
 from typing import Callable, Tuple
-from xml.etree import ElementTree
+from xml import etree
 
 import firedrake as fd
 
 from .output import OutputFilesCollection
 from .processes import PROCESSOR_NEEDED_FUNCS
-
 
 def _process_string_lit(target, replacements):
     result = target

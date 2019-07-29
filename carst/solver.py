@@ -130,8 +130,10 @@ class CarstModel():
 
         # Advance carbonates
         if self._options["enabled_steps"].get("carbonates"):
-            self._funcs[f.sed] = self._funcs[f.sed] + advance_carbonates(
-                self._funcs, self._options)
+            advance_carbonates(self._funcs, self._options)
+            self._funcs[f.sed] += self._options['carbonate_production'] * self._funcs[f.light_attenuation]
+
+        self._funcs[f.sed_old].assign(self._funcs[f.sed])
 
         # Output if necessary
         if self.output_this_cycle:
