@@ -1,4 +1,7 @@
-**/__pycache__/*
+**/__pycache__
+**/.mypy_cache
+**/output
+docs/_static
+docs/_templates
+docs/_build/doctrees
 firedrake*
-output/*
-**/*.rng

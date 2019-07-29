@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to the documentation for the Carst Model! &#8212; Carst Model  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="carst package" href="carst.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-the-documentation-for-the-carst-model">
+<h1>Welcome to the documentation for the Carst Model!<a class="headerlink" href="#welcome-to-the-documentation-for-the-carst-model" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="carst.html">carst package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="carst.html#module-carst.functions">carst.functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="carst.html#module-carst.options">carst.options module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="carst.html#module-carst.output">carst.output module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="carst.html#module-carst.processes">carst.processes module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="carst.html#module-carst.solver">carst.solver module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>See the firedrake documentation at <a class="reference external" href="https://firedrakeproject.org/firedrake.html">https://firedrakeproject.org/firedrake.html</a> for a complement to these documents.</p>
+</div>
+<div class="section" id="example-usage">
+<h1>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h1>
+<p>Using python scripts, the full functionality of <em>carst</em> can be utilised. The user should prepare the initial setting for the model:</p>
+<ul>
+<li><p><strong>The mesh the model will operate in</strong>. This must be an object of type <em>firedrake.mesh.MeshGeometry</em>.</p>
+<p>A simple rectangular mesh could be initialised with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_mesh</span> <span class="o">=</span> <span class="n">fd</span><span class="o">.</span><span class="n">RectangleMesh</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>The layout of the seabed</strong>. This must be in the form of a callable taking two arguments:</p>
+<ul class="simple">
+<li><p>The coordinate space of the mesh the model is working on. This will be passed to it as a firedrake object (indexable), of type <em>firedrake.ufl.geometry.SpacialCoordinate</em>.</p></li>
+<li><p>The function space of the mesh the model is working on. This will be passed to it as a firedrake object, of type <em>firedrake.functionspaceimpl.WithGeometry</em>.</p></li>
+</ul>
+<p>The callable must return an object of type <em>firedrake.function.Function</em>; we recommend using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">firedrake</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="o">&lt;</span><span class="n">your</span> <span class="n">function</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">function_space</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For example, to implement the following expression:</p>
+<p><span class="math notranslate nohighlight">\(100 \tanh(\frac{1}{2000} (x_0 - 6000))\)</span></p>
+<p>We would compose the following python code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_land</span><span class="p">(</span><span class="n">coordinate_space</span><span class="p">,</span> <span class="n">function_space</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">fd</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">fd</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="mf">0.0005</span> <span class="o">*</span> <span class="p">(</span><span class="n">coordinate_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">6000</span><span class="p">)),</span> <span class="n">function_space</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that any mathematical functions used are implemented in the form of the provided functions in <em>firedrake</em>. See the firedrake documentation for more details.</p>
+</li>
+<li><p><strong>The function describing the sea level</strong>. This must be passed as a string to be evaluated by python’s <strong>eval()</strong>.</p>
+<p>An example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sea_level_lit</span> <span class="o">=</span> <span class="s2">&quot;25 * fd.sin(T / 50000 * 180 / math.pi)&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>The times the model is to function on</strong>. These are passed as numeric types in a 3-length tuple as follows, composed of:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">times</span> <span class="o">=</span> <span class="p">(</span><span class="o">&lt;</span><span class="n">start</span> <span class="n">time</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">time</span> <span class="n">step</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">output</span> <span class="n">time</span><span class="o">&gt;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>The output folder</strong>. This is a simple relative path to mark the folder which files should be output into, passed as a string.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">output_folder</span> <span class="o">=</span> <span class="s2">&quot;output&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Which processes should be enabled</strong>. At the time of writing, only “diffusion” and “carbonates” are implemented. These should be bools.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">diff_enabled</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">carbs_enabled</span> <span class="o">=</span> <span class="bp">False</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Extra options</strong>. At the time of writing, “diffusion” requires a diffusion coefficient to be given, a float named “diff_coeff”.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_diff_coeff</span> <span class="o">=</span> <span class="mf">2.0</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Once all these options are gathered, they can be passed (in the above order) to a <em>carst.options.CarstOptions</em> constructor with the <em>carst.options.initialisation_method.raw_values</em> ini_type:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">carst</span> <span class="kn">import</span> <span class="n">options</span><span class="p">,</span> <span class="n">solver</span>
+
+<span class="n">my_options</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">CarstOptions</span><span class="p">(</span>
+    <span class="n">options</span><span class="o">.</span><span class="n">initialisation_method</span><span class="o">.</span><span class="n">raw_values</span><span class="p">,</span>
+    <span class="n">my_mesh</span><span class="p">,</span>
+    <span class="n">my_land</span><span class="p">,</span>
+    <span class="n">sea_level_lit</span><span class="p">,</span>
+    <span class="n">times</span><span class="p">,</span>
+    <span class="n">output_folder</span><span class="p">,</span>
+    <span class="n">diffusion</span><span class="o">=</span><span class="n">diff_enabled</span><span class="p">,</span>
+    <span class="n">carbonates</span><span class="o">=</span><span class="n">carbs_enabled</span><span class="p">,</span>
+    <span class="n">diff_coeff</span><span class="o">=</span><span class="n">my_diff_coeff</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The <em>CarstOptions</em> class should be passed to the constructor of <em>carst.solver.CarstModel</em>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_solver</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">CarstModel</span><span class="p">(</span><span class="n">my_options</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, an initial condition for the sediment must be specified. This, similarly to the seabed function, must be passed as a callable which returns an object of type <em>firedrake.function.Function</em>.</p>
+<p>In order to implement:</p>
+<p><span class="math notranslate nohighlight">\(\frac{10000}{\sqrt{2 \pi \times 250^2}} e^{- \frac{(x_0 - 6000)^2}{2 \times 250^2}} + \frac{25000}{\sqrt{2 \pi \times 1000^2}} e^{- \frac{(x_0 - 4000)^2}{2 \times 1000^2}}\)</span></p>
+<p>We would use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">my_initial_cond</span><span class="p">(</span><span class="n">coordinate_space</span><span class="p">,</span> <span class="n">function_space</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">fd</span><span class="o">.</span><span class="n">project</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="mi">10000</span> <span class="o">/</span> <span class="p">(</span><span class="n">fd</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">250</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="o">*</span> <span class="n">fd</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">coordinate_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">6000</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">250</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="mi">25000</span> <span class="o">/</span> <span class="p">(</span><span class="n">fd</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">1000</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="o">*</span> <span class="n">fd</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">((</span><span class="n">coordinate_space</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">4000</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="mi">1000</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="p">),</span>
+        <span class="n">function_space</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>This must then be passed to the <em>set_condition</em> method of your <em>CarstModel</em> instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_solver</span><span class="o">.</span><span class="n">set_condition</span><span class="p">(</span><span class="n">my_initial_cond</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, the model is ready to begin simulation. <em>CarstModel.advance()</em> should be used to advance the model by 1 time step at a time.</p>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/logo_stnd.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="#">Carst Model</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="carst.html">carst package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="carst.html" title="next chapter">carst package</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, University of York.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

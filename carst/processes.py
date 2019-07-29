@@ -7,12 +7,18 @@ from .functions import carst_funcs as f
 TINY = 1e-10
 
 
-def DIFFUSION_EQUATION_GENERIC(funcs: FunctionContainer,
-                               options) -> fd.Function:
+def DIFFUSION_EQUATION_GENERIC(funcs, options):
+    """Generate a firedrake object representing the diffusion equation for the current model.
+
+    :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance the model is working from.
+    :param carst.options.CarstOptions options: The *CarstOptions* instance the model is working from.
+    :returns: A firedrake Function to be used for solving the diffusion equation with the current model (reusable).
+    :rtype: firedrake.function.Function
+    """
     return (fd.inner(
         (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
         options["test_function"],
-    ) + funcs[f.limiter] * options['diff_coeff'] * #funcs[f.diff_coeff] *
+    ) + funcs[f.limiter] * options['diff_coeff'] *  #funcs[f.diff_coeff] *
             fd.inner(fd.grad(funcs[f.sed] + options["land"]),
                      fd.grad(options["test_function"]))) * fd.dx
 
@@ -52,14 +58,24 @@ PROCESSOR_NEEDED_FUNCS = {
 }
 
 
-def advance_diffusion(funcs: FunctionContainer, options):
-    fd.solve(
-        options['diffusion_equation'] == 0,
-        funcs[f.sed]
-    )
+def advance_diffusion(funcs, options):
+    """Perform diffusion simulation over 1 time step.
+
+    Note that this also performs interpolation over the rest of the *FunctionContainer* since it is the most basic function of the model.
+
+    :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance the model is working from. This is modified in-place.
+    :param carst.options.CarstOptions options: The *CarstOptions* instance the model is working from.
+    """
+    fd.solve(options['diffusion_equation'] == 0, funcs[f.sed])
+    funcs[f.sed_old].assign(funcs[f.sed])
     funcs.interpolate(options, *INTERPOLATION_ORDER)
 
 
-def advance_carbonates(funcs: FunctionContainer, options) -> fd.Function:
+def advance_carbonates(funcs, options):
+    """Perform carbonate simulation over 1 time step.
+
+    :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance the model is working from. This is modified in-place.
+    :param carst.options.CarstOptions options: The *CarstOptions* instance the model is working from.
+    """
     funcs.interpolate(options, f.light_attenuation)
-    return 
+    return options["carbonate_production"] * funcs[f.light_attenuation]

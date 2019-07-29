@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>carst package &#8212; Carst Model  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to the documentation for the Carst Model!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="carst-package">
+<h1>carst package<a class="headerlink" href="#carst-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-carst.functions">
+<span id="carst-functions-module"></span><h2>carst.functions module<a class="headerlink" href="#module-carst.functions" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="carst.functions.FunctionContainer">
+<em class="property">class </em><code class="sig-prename descclassname">carst.functions.</code><code class="sig-name descname">FunctionContainer</code><span class="sig-paren">(</span><em class="sig-param">options</em>, <em class="sig-param">wanted_funcs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.UserDict</span></code></p>
+<p>Mapping to hold functions required for modelling.</p>
+<p>Inherits <em>dict</em>/<em>UserDict</em> to allow easy access to parent data. Note that only <a class="reference internal" href="#carst.functions.carst_funcs">carst.functions.carst_funcs</a> values are acceptable as keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The CarstOptions instance the model is working off. Needed for supplementary data.</p></li>
+<li><p><strong>wanted_funcs</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#carst.functions.carst_funcs" title="carst.functions.carst_funcs"><em>carst.functions.carst_funcs</em></a><em>]</em>) – The collection of carst_funcs which specifies which function types the object should contain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An initialised carst.functions.FunctionContainer instance. The functions are still blank (ie. not interpolated).</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="carst.functions.FunctionContainer.interpolate">
+<code class="sig-name descname">interpolate</code><span class="sig-paren">(</span><em class="sig-param">options</em>, <em class="sig-param">*function_names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/functions.html#FunctionContainer.interpolate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.FunctionContainer.interpolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolate the functions contained in the module by one time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The options set that the model is currently working on.</p></li>
+<li><p><strong>function_names</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#carst.functions.carst_funcs" title="carst.functions.carst_funcs"><em>carst.functions.carst_funcs</em></a><em>]</em>) – The functions to be interpolated.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="carst.functions.carst_funcs">
+<em class="property">class </em><code class="sig-prename descclassname">carst.functions.</code><code class="sig-name descname">carst_funcs</code><a class="reference internal" href="_modules/carst/functions.html#carst_funcs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.functions.carst_funcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Enumerator to correspond to the functions the model relies on.</p>
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.depth">
+<code class="sig-name descname">depth</code><em class="property"> = 6</em><a class="headerlink" href="#carst.functions.carst_funcs.depth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.diff_coeff">
+<code class="sig-name descname">diff_coeff</code><em class="property"> = 7</em><a class="headerlink" href="#carst.functions.carst_funcs.diff_coeff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.light_attenuation">
+<code class="sig-name descname">light_attenuation</code><em class="property"> = 8</em><a class="headerlink" href="#carst.functions.carst_funcs.light_attenuation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.limiter">
+<code class="sig-name descname">limiter</code><em class="property"> = 4</em><a class="headerlink" href="#carst.functions.carst_funcs.limiter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.sea_level">
+<code class="sig-name descname">sea_level</code><em class="property"> = 9</em><a class="headerlink" href="#carst.functions.carst_funcs.sea_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.sed">
+<code class="sig-name descname">sed</code><em class="property"> = 1</em><a class="headerlink" href="#carst.functions.carst_funcs.sed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.sed_old">
+<code class="sig-name descname">sed_old</code><em class="property"> = 2</em><a class="headerlink" href="#carst.functions.carst_funcs.sed_old" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.surface">
+<code class="sig-name descname">surface</code><em class="property"> = 3</em><a class="headerlink" href="#carst.functions.carst_funcs.surface" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.functions.carst_funcs.thickness">
+<code class="sig-name descname">thickness</code><em class="property"> = 5</em><a class="headerlink" href="#carst.functions.carst_funcs.thickness" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-carst.options">
+<span id="carst-options-module"></span><h2>carst.options module<a class="headerlink" href="#module-carst.options" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="carst.options.CarstOptions">
+<em class="property">class </em><code class="sig-prename descclassname">carst.options.</code><code class="sig-name descname">CarstOptions</code><span class="sig-paren">(</span><em class="sig-param">ini_type</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kw_args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/options.html#CarstOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.options.CarstOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">collections.UserDict</span></code></p>
+<p>Takes various forms of input and stores it in a form expected by carst.solver.CarstModel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ini_type</strong> (<a class="reference internal" href="#carst.options.initialisation_method" title="carst.options.initialisation_method"><em>carst.options.initialisation_method</em></a>) – The method to use for gathering data.</p></li>
+<li><p><strong>args</strong> (<em>Iterable</em>) – See below.</p></li>
+</ul>
+</dd>
+</dl>
+<p>If ini_type is <a class="reference internal" href="#carst.options.initialisation_method.raw_values">carst.options.initialisation_method.raw_values</a>, <em>args</em> should contain:</p>
+<ul class="simple">
+<li><p>The base mesh on which the model will operate, of type <em>firedrake.mesh.MeshGeometry</em>.</p></li>
+<li><p>A function which takes arguments representing the coordinate space and function space of the model’s workspace, and returns a firedrake object describing the shape of the seabed.</p></li>
+<li><p>A <em>str</em> representation of the sea level (typically as a function of time). See the string representation table for more info.</p></li>
+<li><p>A collection containing the times (<em>float</em>) for the model, ie. (current_time, time_step, output_time), in that order.</p></li>
+<li><p>A (relative) path to the directory to be used for output.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="class">
+<dt id="carst.options.initialisation_method">
+<em class="property">class </em><code class="sig-prename descclassname">carst.options.</code><code class="sig-name descname">initialisation_method</code><a class="reference internal" href="_modules/carst/options.html#initialisation_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.options.initialisation_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>Enum for specifying to carst.options.CarstOptions where you want the initialisation data to come from.</p>
+<dl class="attribute">
+<dt id="carst.options.initialisation_method.diamond_default">
+<code class="sig-name descname">diamond_default</code><em class="property"> = 2</em><a class="headerlink" href="#carst.options.initialisation_method.diamond_default" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="carst.options.initialisation_method.raw_values">
+<code class="sig-name descname">raw_values</code><em class="property"> = 1</em><a class="headerlink" href="#carst.options.initialisation_method.raw_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-carst.output">
+<span id="carst-output-module"></span><h2>carst.output module<a class="headerlink" href="#module-carst.output" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="carst.output.OutputFilesCollection">
+<em class="property">class </em><code class="sig-prename descclassname">carst.output.</code><code class="sig-name descname">OutputFilesCollection</code><span class="sig-paren">(</span><em class="sig-param">output_folder</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A container for firedrake File objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>output_folder</strong> (<em>str</em>) – The relative file path to the directory the output files should be stored in.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="carst.output.OutputFilesCollection.output">
+<code class="sig-name descname">output</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em>, <em class="sig-param">names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/output.html#OutputFilesCollection.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.output.OutputFilesCollection.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the current status of the model’s functions to the output files stored in this container.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance which <em>OutputFilesCollection</em> will use as data.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> onject the model is working off.</p></li>
+<li><p><strong>names</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Names of files which are to be written to. Should be a subset of (“land”, “layer_data”, “surfaces”, “sea_level”). If not provided, all files will be written to.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-carst.processes">
+<span id="carst-processes-module"></span><h2>carst.processes module<a class="headerlink" href="#module-carst.processes" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="carst.processes.DIFFUSION_EQUATION_GENERIC">
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">DIFFUSION_EQUATION_GENERIC</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#DIFFUSION_EQUATION_GENERIC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.DIFFUSION_EQUATION_GENERIC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a firedrake object representing the diffusion equation for the current model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A firedrake Function to be used for solving the diffusion equation with the current model (reusable).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>firedrake.function.Function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="carst.processes.advance_carbonates">
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_carbonates</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_carbonates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_carbonates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform carbonate simulation over 1 time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from. This is modified in-place.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="carst.processes.advance_diffusion">
+<code class="sig-prename descclassname">carst.processes.</code><code class="sig-name descname">advance_diffusion</code><span class="sig-paren">(</span><em class="sig-param">funcs</em>, <em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/processes.html#advance_diffusion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.processes.advance_diffusion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform diffusion simulation over 1 time step.</p>
+<p>Note that this also performs interpolation over the rest of the <em>FunctionContainer</em> since it is the most basic function of the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>funcs</strong> (<a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer"><em>carst.functions.FunctionContainer</em></a>) – The <em>FunctionContainer</em> instance the model is working from. This is modified in-place.</p></li>
+<li><p><strong>options</strong> (<a class="reference internal" href="#carst.options.CarstOptions" title="carst.options.CarstOptions"><em>carst.options.CarstOptions</em></a>) – The <em>CarstOptions</em> instance the model is working from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-carst.solver">
+<span id="carst-solver-module"></span><h2>carst.solver module<a class="headerlink" href="#module-carst.solver" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="carst.solver.CarstModel">
+<em class="property">class </em><code class="sig-prename descclassname">carst.solver.</code><code class="sig-name descname">CarstModel</code><span class="sig-paren">(</span><em class="sig-param">options</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simulates sediment formation on the seabed.</p>
+<dl class="method">
+<dt id="carst.solver.CarstModel.advance">
+<code class="sig-name descname">advance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel.advance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel.advance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advance the simulation by a single time step.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.coordinate_space">
+<em class="property">property </em><code class="sig-name descname">coordinate_space</code><a class="headerlink" href="#carst.solver.CarstModel.coordinate_space" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The firedrake object describing the coordinate space the model is operating in.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>firedrake.ufl.geometry.SpacialCoordinate</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.funcs">
+<em class="property">property </em><code class="sig-name descname">funcs</code><a class="headerlink" href="#carst.solver.CarstModel.funcs" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The FunctionContainer object which holds the current status of all the mathematical functions the model is using.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#carst.functions.FunctionContainer" title="carst.functions.FunctionContainer">carst.functions.FunctionContainer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.function_space">
+<em class="property">property </em><code class="sig-name descname">function_space</code><a class="headerlink" href="#carst.solver.CarstModel.function_space" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The firedrake object describing the function space the model is operating in.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>firedrake.functionspaceimpl.WithGeometry</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.land">
+<em class="property">property </em><code class="sig-name descname">land</code><a class="headerlink" href="#carst.solver.CarstModel.land" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The firedrake object containing the land function.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>firedrake.function.Function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.output_this_cycle">
+<em class="property">property </em><code class="sig-name descname">output_this_cycle</code><a class="headerlink" href="#carst.solver.CarstModel.output_this_cycle" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if model will write to output files this cycle.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.set_condition">
+<code class="sig-name descname">set_condition</code><span class="sig-paren">(</span><em class="sig-param">condition</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/carst/solver.html#CarstModel.set_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#carst.solver.CarstModel.set_condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the function describing the status of the sediment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>condition</strong> (<em>firedrake.function.Function</em>) – the function to set the sediment to.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="carst.solver.CarstModel.times">
+<em class="property">property </em><code class="sig-name descname">times</code><a class="headerlink" href="#carst.solver.CarstModel.times" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dict containing all the time variables the model is using.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo_stnd.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="index.html">Carst Model</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">carst package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-carst.functions">carst.functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-carst.options">carst.options module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-carst.output">carst.output module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-carst.processes">carst.processes module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-carst.solver">carst.solver module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to the documentation for the Carst Model!</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, University of York.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/carst.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0" xmlns="http://relaxng.org/ns/structure/1.0">
+  <include href="spud_base.rng"/>
+  <start>
+    <element name="Carst-Options">
+      <element name="geometry">
+        <a:documentation>Geometry-related options.</a:documentation>
+        <element name="dimension">
+          <a:documentation>The dimension of the problem.
+&lt;b&gt;This can only be set once.&lt;/b&gt;
+Should be 2</a:documentation>
+          <element name="integer_value">
+            <attribute name="rank">
+              <value>0</value>
+            </attribute>
+            <value>2</value>
+          </element>
+        </element>
+      </element>
+      <element name="Mesh-Values">
+        <a:documentation>The values used in initialising the mesh object
+on which all our functions are defined</a:documentation>
+        <element name="X-Parameters">
+          <a:documentation>Number of cells and extent in the x-direction.
+Space-seperated.</a:documentation>
+          <ref name="integer_dim_vector"/>
+        </element>
+        <element name="Y-Parameters">
+          <a:documentation>Number of cells and extent in the y-direction.
+Space-seperated.</a:documentation>
+          <ref name="integer_dim_vector"/>
+        </element>
+      </element>
+      <element name="Times">
+        <a:documentation>Please consider that all times are in years(?)</a:documentation>
+        <element name="Start-Time">
+          <a:documentation>The time for the model to start simulating from</a:documentation>
+          <ref name="real"/>
+        </element>
+        <element name="Step-Time">
+          <a:documentation>The time to simulate as the "step time"</a:documentation>
+          <ref name="real"/>
+        </element>
+        <element name="Output-Time">
+          <a:documentation>The time to output to output at</a:documentation>
+          <ref name="real"/>
+        </element>
+        <element name="End-Time">
+          <a:documentation>The time to stop simulating</a:documentation>
+          <ref name="real"/>
+        </element>
+      </element>
+      <element name="Output-Directory">
+        <a:documentation>The folder to write the output files to</a:documentation>
+        <ref name="anystring"/>
+      </element>
+      <element name="Land-Function">
+        <a:documentation>The mathematical function defining the sea bed.
+Defined in terms of coord-space (x) and function
+space (f).</a:documentation>
+        <ref name="anystring"/>
+      </element>
+      <element name="Initial-Condition">
+        <a:documentation>The mathematical function defining the initial state
+of the sediment.
+Defined in terms of coord-space (x) and function
+space (f).</a:documentation>
+        <ref name="anystring"/>
+      </element>
+      <element name="Sea-Level-Constant">
+        <a:documentation>The mathematical function defining the sea level constant.</a:documentation>
+        <ref name="anystring"/>
+      </element>
+      <element name="Enabled-Steps">
+        <a:documentation>Which steps of the simulation to enable</a:documentation>
+        <element name="Diffusion">
+          <ref name="python_bool"/>
+        </element>
+        <element name="Carbonates">
+          <ref name="python_bool"/>
+        </element>
+      </element>
+      <optional>
+        <element name="Diff-Coefficient">
+          <a:documentation>The value of the diffusion coefficient.</a:documentation>
+          <ref name="real"/>
+        </element>
+      </optional>
+    </element>
+  </start>
+  <define name="python_bool">
+    <choice>
+      <value>True</value>
+      <value>False</value>
+    </choice>
+  </define>
+</grammar>

@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>carst.functions &#8212; Carst Model  documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for carst.functions</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">UserDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span> <span class="nn">firedrake</span> <span class="k">as</span> <span class="nn">fd</span>
+
+
+<span class="c1"># To add a function, add it&#39;s label to carst_funcs then add the corresponding logic to</span>
+<span class="c1"># FunctionContainer._INTERPOLATION_FUNCS (make sure you get the key right!)</span>
+<div class="viewcode-block" id="carst_funcs"><a class="viewcode-back" href="../../carst.html#carst.functions.carst_funcs">[docs]</a><span class="k">class</span> <span class="nc">carst_funcs</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enumerator to correspond to the functions the model relies on.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sed</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">sed_old</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">surface</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">limiter</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">thickness</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">diff_coeff</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">light_attenuation</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">sea_level</span> <span class="o">=</span> <span class="mi">9</span></div>
+
+
+<div class="viewcode-block" id="FunctionContainer"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer">[docs]</a><span class="k">class</span> <span class="nc">FunctionContainer</span><span class="p">(</span><span class="n">UserDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Mapping to hold functions required for modelling.</span>
+
+<span class="sd">    Inherits *dict*/*UserDict* to allow easy access to parent data. Note that only `carst.functions.carst_funcs`_ values are acceptable as keys.</span>
+
+<span class="sd">    :param carst.options.CarstOptions options: The CarstOptions instance the model is working off. Needed for supplementary data.</span>
+<span class="sd">    :param Sequence[carst.functions.carst_funcs] wanted_funcs: The collection of carst_funcs which specifies which function types the object should contain.</span>
+<span class="sd">    :returns: An initialised carst.functions.FunctionContainer instance. The functions are still blank (ie. not interpolated).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Workaround for python&#39;s lack of a switch/match statement &gt;:(</span>
+    <span class="n">_INTERPOLATION_FUNCS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="p">((((</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">])</span> <span class="o">+</span> <span class="n">funcs</span><span class="p">[</span>
+            <span class="n">carst_funcs</span><span class="o">.</span><span class="n">sed</span><span class="p">])</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">sed</span><span class="p">]))</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">),</span>
+        <span class="n">carst_funcs</span><span class="o">.</span><span class="n">thickness</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="p">(</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">]</span> <span class="o">-</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]),</span>
+        <span class="n">carst_funcs</span><span class="o">.</span><span class="n">limiter</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span>
+        <span class="p">((</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">]</span> <span class="o">-</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">])</span> <span class="o">/</span>
+         <span class="p">(</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">]</span> <span class="o">-</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;land&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1e-10</span><span class="p">)),</span>
+        <span class="n">carst_funcs</span><span class="o">.</span><span class="n">depth</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">sea_level</span><span class="p">]</span> <span class="o">-</span> <span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">surface</span><span class="p">]),</span>
+        <span class="n">carst_funcs</span><span class="o">.</span><span class="n">diff_coeff</span><span class="p">:</span>
+        <span class="k">lambda</span> <span class="n">funcs</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s2">&quot;diff_coeff&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="p">(</span><span class="mf">2.</span> <span class="o">/</span> <span class="n">fd</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span> <span class="o">*</span> <span class="n">fd</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">funcs</span><span class="p">[</span><span class="n">carst_funcs</span><span class="o">.</span><span class="n">depth</span><span class="p">]</span> <span class="o">-</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">10.0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))),</span>
+        <span class="c1">#carst_funcs.sea_level:</span>
+        <span class="c1">#lambda funcs, options: options[&quot;sea_level&quot;],</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">wanted_funcs</span><span class="p">):</span>
+        <span class="n">function_space</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s2">&quot;function_space&quot;</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">({</span>
+            <span class="n">func_name</span><span class="p">:</span> <span class="n">fd</span><span class="o">.</span><span class="n">Function</span><span class="p">(</span>
+                <span class="n">function_space</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">func_name</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">func_name</span> <span class="ow">in</span> <span class="n">wanted_funcs</span>
+        <span class="p">})</span>
+
+    <span class="c1"># Enforce type checking on __getitem__ and __setitem__</span>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">carst_funcs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Key {str(key)} not a member of carst_funcs&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">carst_funcs</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Key {str(key)} not a member of carst_funcs&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">fd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Value {str(val)} not of type firedrake.Function&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FunctionContainer.interpolate"><a class="viewcode-back" href="../../carst.html#carst.functions.FunctionContainer.interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">*</span><span class="n">function_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Interpolate the functions contained in the module by one time step.</span>
+
+<span class="sd">        :param carst.options.CarstOptions options: The options set that the model is currently working on.</span>
+<span class="sd">        :param Sequence[carst.functions.carst_funcs] function_names: The functions to be interpolated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">function_names</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+                    <span class="n">FunctionContainer</span><span class="o">.</span><span class="n">_INTERPOLATION_FUNCS</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="bp">self</span><span class="p">,</span>
+                                                                 <span class="n">options</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">continue</span></div>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="vm">__class__</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/logo_stnd.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="../../index.html">Carst Model</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../carst.html">carst package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, University of York.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -7,17 +7,16 @@ FIREDRAKE_VENV_FULL := $(PROJECT_DIR)/firedrake
 # Paths to alias long targets
 DIAMOND_PIP := firedrake/lib/python3.7/site-packages/diamond
 DXDIFF_PIP := firedrake/lib/python3.7/site-packages/dxdiff
-SPUD_BASE := firedrake/share/spud/spud_base.rnc
+SPUD_BASE := firedrake/share/spud/spud_base.rnc firedrake/share/spud/spud_base.rng
 
 # For sourcing the shell file to activate the firedrake venv
 FIREDRAKE_ACTIVATION := firedrake/bin/activate
 
-# Temporary test
 all: diamond_default.rng $(DIAMOND_PIP) firedrake
 	{ \
 		set -e; \
 		source $(FIREDRAKE_ACTIVATION); \
-		diamond -s diamond_default.rng; \
+		./firedrake/bin/diamond -s diamond_default.rng; \
 	}
 
 test: firedrake carst basic_tests.py scripts
@@ -47,14 +46,6 @@ lint:
 clean:
 	@echo "Removing venv..."
 	-rm -rf firedrake firedrake-install
-
-diamond_default.rng: $(DIAMOND_PIP) diamond_default.rnc
-	@echo "Building schema..."
-	{ \
-		set -e; \
-		source $(FIREDRAKE_ACTIVATION); \
-		./firedrake/usr/bin/spud-preprocess diamond_default.rnc; \
-	}
 
 planning_diagram.png:
 	@echo "Building diagram..."
