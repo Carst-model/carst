@@ -127,7 +127,7 @@ class CarstOptions(UserDict):
         self["sea_level"] = sea_level.replace("T",
                                               "self._times['current_time']")
         self["times"] = dict(
-            zip(("current_time", "time_step", "output_time"), times))
+            zip(("current_time", "time_step", "output_time", "end_time"), times))
         self["mesh"] = base_mesh
 
         # Mark the steps in the process we want

@@ -10,6 +10,7 @@ from carst.solver import CarstModel
 START_TIME = 0
 OUTPUT_TIME = 500
 TIME_STEP = 50
+END_TIME = 10000
 OUTPUT_FOLDER = "output"
 
 
@@ -42,6 +43,7 @@ my_options = CarstOptions(
         START_TIME,
         TIME_STEP,
         OUTPUT_TIME,
+        END_TIME,
     ),
     output_folder=OUTPUT_FOLDER,
     diffusion=True,
@@ -59,6 +61,4 @@ my_solver_real_scale.set_condition(
     EXAMPLE_INITIAL_COND(my_solver_real_scale.coordinate_space,
                          my_solver_real_scale.function_space))
 
-# Iterate
-while my_solver_real_scale.times["current_time"] <= 20000:
-    my_solver_real_scale.advance()
+my_solver_real_scale.iterate()

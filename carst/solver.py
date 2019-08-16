@@ -49,6 +49,8 @@ class CarstModel():
         self._options = options
         self._times = self._options["times"]
         self._out_files = self._options["out_files"]
+        t = self._times["current_time"]
+        print(self._times)
 
         # Initialise function objects
         self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
@@ -119,28 +121,34 @@ class CarstModel():
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
         self._out_files.output(self._funcs, self._options)
 
-    def advance(self):
+    def iterate(self):
         """Advance the simulation by a single time step.
         """
         # Increment time
+        # Iterate
+        while self._times["current_time"] <= self._times['end_time']:
 
-        # Advance diffusion
-        if self._options["enabled_steps"].get("diffusion"):
-            advance_diffusion(self._funcs, self._options)
+            # move to next time_step
+            self._times['current_time'] += self._times['time_step']   
+            t = self._times["current_time"]
+            
 
-        # Advance carbonates
-        if self._options["enabled_steps"].get("carbonates"):
-            advance_carbonates(self._funcs, self._options)
-            self._funcs[f.sed] += self._options['carbonate_production'] * self._funcs[f.light_attenuation]
+            # update sea level
+            self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
 
-        self._funcs[f.sed_old].assign(self._funcs[f.sed])
+            # Advance diffusion
+            if self._options["enabled_steps"].get("diffusion"):
+                advance_diffusion(self._funcs, self._options)
 
-        # Output if necessary
-        if self.output_this_cycle:
-            print("At time step: " + str(self._times['current_time']))
-            self._out_files.output(self._funcs, self._options)
+            # Advance carbonates
+            if self._options["enabled_steps"].get("carbonates"):
+                advance_carbonates(self._funcs, self._options)
+                self._funcs[f.sed] += self._options['carbonate_production'] * self._funcs[f.light_attenuation]
 
-        self._times["current_time"] += self._times["time_step"]
+            self._funcs[f.sed_old].assign(self._funcs[f.sed])
 
-        # update sea level
-        self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
+            # Output if necessary
+            if self.output_this_cycle:
+                print("At time step: " + str(self._times['current_time']))
+                self._out_files.output(self._funcs, self._options)
+
