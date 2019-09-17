@@ -1,14 +1,14 @@
+from __future__ import absolute_import
+from .utility import *
 import copy
 import math
-
-import firedrake as fd
 
 from .functions import FunctionContainer
 from .functions import carst_funcs as f
 from .options import CarstOptions
 from .processes import (DIFFUSION_EQUATION_GENERIC, INIT_INTERPOLATION_ORDER,
                         advance_carbonates, advance_diffusion)
-
+from . import callback
 
 class CarstModel():
     """Simulates sediment formation on the seabed.
@@ -50,7 +50,10 @@ class CarstModel():
         self._times = self._options["times"]
         self._out_files = self._options["out_files"]
         t = self._times["current_time"]
-        print(self._times)
+        self.callbacks = callback.CallbackManager()
+        """
+        :class:`.CallbackManager` object that stores all callbacks
+        """
 
         # Initialise function objects
         self._funcs = FunctionContainer(self._options, options["wanted_funcs"])
@@ -66,7 +69,9 @@ class CarstModel():
                 self._funcs, self._options)
 
         if self._options.get("initial_condition") is not None:
-            self.set_condition(self._options["initial_condition"])
+            self.set_condition(self._options["initial_condition"]) 
+
+        self.comm = self._options['mesh'].comm
 
     @property
     def land(self):
@@ -121,7 +126,7 @@ class CarstModel():
         self._funcs.interpolate(self._options, *INIT_INTERPOLATION_ORDER)
         self._out_files.output(self._funcs, self._options)
 
-    def iterate(self):
+    def iterate(self,update_forcings=None):
         """Advance the simulation by a single time step.
         """
         # Increment time
@@ -131,7 +136,9 @@ class CarstModel():
             # move to next time_step
             self._times['current_time'] += self._times['time_step']   
             t = self._times["current_time"]
-            
+
+            if update_forcings:
+                update_forcings(t)
 
             # update sea level
             self._funcs[f.sea_level].assign(eval(self._options['sea_level']))
@@ -147,8 +154,11 @@ class CarstModel():
 
             self._funcs[f.sed_old].assign(self._funcs[f.sed])
 
+            self.callbacks.evaluate(mode='timestep')
+
             # Output if necessary
             if self.output_this_cycle:
                 print("At time step: " + str(self._times['current_time']))
+                self.callbacks.evaluate(mode='export')
                 self._out_files.output(self._funcs, self._options)
 

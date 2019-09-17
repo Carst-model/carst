@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Callable, Tuple
 from xml import etree
 
-import firedrake as fd
+from .firedrake import *
 
 from .output import OutputFilesCollection
 from .processes import PROCESSOR_NEEDED_FUNCS
@@ -73,10 +73,10 @@ class CarstOptions(UserDict):
             zip(map(make_int, tree_root[0][0][0].text.split(" ")),
                 map(make_int, tree_root[0][1][0].text.split(" "))))
         mesh_args = mesh_args[0] + mesh_args[1]
-        self["mesh"] = fd.RectangleMesh(*mesh_args)
-        self["coordinate_space"] = fd.SpatialCoordinate(self["mesh"])
-        self["function_space"] = fd.FunctionSpace(self["mesh"], "CG", 1)
-        self["test_function"] = fd.TestFunction(self["function_space"])
+        self["mesh"] = RectangleMesh(*mesh_args)
+        self["coordinate_space"] = SpatialCoordinate(self["mesh"])
+        self["function_space"] = FunctionSpace(self["mesh"], "CG", 1)
+        self["test_function"] = TestFunction(self["function_space"])
 
         self["times"] = dict(
             zip(("current_time", "time_step", "output_time", "end_time"),
@@ -118,7 +118,7 @@ class CarstOptions(UserDict):
 
     def _raw_values(self, base_mesh, land, sea_level, times, output_folder,
                     **kw_args):
-        if not isinstance(base_mesh, fd.mesh.MeshGeometry):
+        if not isinstance(base_mesh, mesh.MeshGeometry):
             raise TypeError("base_mesh not of type firedrake.Mesh")
         if not isinstance(sea_level, str):
             raise TypeError("sea_level not of type str")
@@ -129,6 +129,7 @@ class CarstOptions(UserDict):
         self["times"] = dict(
             zip(("current_time", "time_step", "output_time", "end_time"), times))
         self["mesh"] = base_mesh
+        self["output_folder"] = output_folder
 
         # Mark the steps in the process we want
         self["enabled_steps"] = {
@@ -143,9 +144,9 @@ class CarstOptions(UserDict):
                 )
 
         # Generate our workspace from the mesh
-        self["coordinate_space"] = fd.SpatialCoordinate(self["mesh"])
-        self["function_space"] = fd.FunctionSpace(self["mesh"], "CG", 1)
-        self["test_function"] = fd.TestFunction(self["function_space"])
+        self["coordinate_space"] = SpatialCoordinate(self["mesh"])
+        self["function_space"] = FunctionSpace(self["mesh"], "CG", 1)
+        self["test_function"] = TestFunction(self["function_space"])
 
         # Get our land, based in our workspace
         self["land"] = land(self["coordinate_space"], self["function_space"])
@@ -158,7 +159,7 @@ class CarstOptions(UserDict):
 
         # Initialise out_files
         self["out_files"] = OutputFilesCollection(output_folder)
-        self["diff_coeff"] = float(kw_args.get('diff_coeff'))
+        self["diff_coeff"] = kw_args.get('diff_coeff')
 
         if kw_args.get("initial_condition") is not None:
             self["initial_condition"] = kw_args["initial_condition"]

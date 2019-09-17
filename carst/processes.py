@@ -1,4 +1,4 @@
-import firedrake as fd
+from .firedrake import *
 
 from .functions import FunctionContainer
 from .functions import carst_funcs as f
@@ -15,12 +15,12 @@ def DIFFUSION_EQUATION_GENERIC(funcs, options):
     :returns: A firedrake Function to be used for solving the diffusion equation with the current model (reusable).
     :rtype: firedrake.function.Function
     """
-    return (fd.inner(
+    return (inner(
         (funcs[f.sed] - funcs[f.sed_old]) / options["times"]["time_step"],
         options["test_function"],
     ) + funcs[f.limiter] * options['diff_coeff'] *  #funcs[f.diff_coeff] *
-            fd.inner(fd.grad(funcs[f.sed] + options["land"]),
-                     fd.grad(options["test_function"]))) * fd.dx
+            inner(grad(funcs[f.sed] + options["land"]),
+                     grad(options["test_function"]))) * dx
 
 
 # Set interpolation order constants
@@ -66,7 +66,7 @@ def advance_diffusion(funcs, options):
     :param carst.functions.FunctionContainer funcs: The *FunctionContainer* instance the model is working from. This is modified in-place.
     :param carst.options.CarstOptions options: The *CarstOptions* instance the model is working from.
     """
-    fd.solve(options['diffusion_equation'] == 0, funcs[f.sed])
+    solve(options['diffusion_equation'] == 0, funcs[f.sed])
     funcs[f.sed_old].assign(funcs[f.sed])
     funcs.interpolate(options, *INTERPOLATION_ORDER)
 
